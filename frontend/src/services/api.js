@@ -1,15 +1,25 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
-
 axios.defaults.baseURL = API_BASE_URL
 
+// Books
 export const getBooks = async () => {
   try {
     const response = await axios.get('/api/books')
     return response.data
   } catch (error) {
     console.error('Error fetching books:', error)
+    throw error
+  }
+}
+
+export const getBookById = async (id) => {
+  try {
+    const response = await axios.get(`/api/books/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching book by ID:', error)
     throw error
   }
 }
@@ -24,6 +34,7 @@ export const addBook = async (bookData) => {
   }
 }
 
+// Authors
 export const getAuthors = async () => {
   try {
     const response = await axios.get('/api/authors')
@@ -44,6 +55,17 @@ export const addAuthor = async (authorData) => {
   }
 }
 
+export const deleteAuthor = async (id) => {
+  try {
+    const response = await axios.delete(`/api/authors/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('Error deleting author:', error)
+    throw error
+  }
+}
+
+// Publishers
 export const getPublishers = async () => {
   try {
     const response = await axios.get('/api/publishers')
@@ -64,6 +86,17 @@ export const addPublisher = async (publisherData) => {
   }
 }
 
+export const deletePublisher = async (id) => {
+  try {
+    const response = await axios.delete(`/api/publishers/${id}`)
+    return response.data
+  } catch (error) {
+    console.error('Error deleting publisher:', error)
+    throw error
+  }
+}
+
+// Reservations
 export const reserveBook = async (bookId) => {
   try {
     const response = await axios.post('/api/reservations', { book_id: bookId })
@@ -94,6 +127,7 @@ export const returnBook = async (reservationId) => {
   }
 }
 
+// Fines
 export const getFines = async () => {
   try {
     const response = await axios.get('/api/fines')
@@ -114,6 +148,7 @@ export const payFine = async (fineId) => {
   }
 }
 
+// GD Rooms
 export const getGDRooms = async () => {
   try {
     const response = await axios.get('/api/gd/rooms')

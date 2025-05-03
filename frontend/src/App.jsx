@@ -24,7 +24,6 @@ import GDRoomList from './components/GD/GDRoomList'
 import ReserveGDRoom from './components/GD/ReserveGDRoom'
 import MyGDReservations from './components/GD/MyGDReservations'
 import ProtectedRoute from './components/common/ProtectedRoute'
-import './App.css'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
