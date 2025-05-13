@@ -1,94 +1,172 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { 
-  TextField, 
-  Button, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Typography, 
   Box, 
-  CircularProgress,
-  Alert
+  Button,
+  TextField,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
-import { addAuthor } from '../../services/api';
+import { Delete, Edit } from '@mui/icons-material';
+import { getAuthors, deleteAuthor } from '../../services/api';
+import AuthContext from '../../context/AuthContext';
+import AddAuthor from './AddAuthor';
 
-const AddAuthor = ({ onSuccess }) => {
-  const [authorData, setAuthorData] = useState({
-    name: '',
-    biography: '',
-    nationality: ''
-  });
-  const [loading, setLoading] = useState(false);
+const AuthorList = () => {
+  const [authors, setAuthors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const { user } = useContext(AuthContext);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAuthorData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  useEffect(() => {
+    fetchAuthors();
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    
+  const fetchAuthors = async () => {
     try {
-      await addAuthor(authorData);
-      onSuccess();
+      const data = await getAuthors();
+      // Transform API response data to match expected structure
+      const formattedAuthors = data.map(author => ({
+        id: author.author_id,
+        name: author.name || 'Unknown',
+        nationality: author.nationality || '',
+        biography: author.biography || ''
+      }));
+      setAuthors(formattedAuthors);
+      setLoading(false);
     } catch (err) {
-      setError(err.message || 'Failed to add author');
-    } finally {
+      setError('Failed to fetch authors');
       setLoading(false);
     }
   };
 
+  const handleDeleteClick = (author) => {
+    setSelectedAuthor(author);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteAuthor(selectedAuthor.id);
+      setAuthors(authors.filter(a => a.id !== selectedAuthor.id));
+      setOpenDeleteDialog(false);
+    } catch (err) {
+      setError('Failed to delete author');
+    }
+  };
+
+  const handleAddSuccess = () => {
+    setOpenAddDialog(false);
+    fetchAuthors();
+  };
+
+  const filteredAuthors = authors.filter(author => 
+    author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (author.nationality && author.nationality.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading) return <Typography>Loading authors...</Typography>;
+  if (error) return <Typography color="error">{error}</Typography>;
+
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Authors
+      </Typography>
       
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        label="Name"
-        name="name"
-        value={authorData.name}
-        onChange={handleChange}
-      />
-      <TextField
-        margin="normal"
-        fullWidth
-        label="Biography"
-        name="biography"
-        multiline
-        rows={4}
-        value={authorData.biography}
-        onChange={handleChange}
-      />
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        label="Nationality"
-        name="nationality"
-        value={authorData.nationality}
-        onChange={handleChange}
-      />
-      
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-        <Button 
-          type="submit" 
-          variant="contained" 
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {loading ? 'Adding...' : 'Add Author'}
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <TextField
+          label="Search Authors"
+          variant="outlined"
+          size="small"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {user?.role === 'librarian' && (
+          <Button 
+            variant="contained" 
+            onClick={() => setOpenAddDialog(true)}
+          >
+            Add New Author
+          </Button>
+        )}
       </Box>
+      
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Nationality</TableCell>
+              <TableCell>Biography</TableCell>
+              {user?.role === 'librarian' && <TableCell>Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredAuthors.length > 0 ? (
+              filteredAuthors.map((author) => (
+                <TableRow key={author.id}>
+                  <TableCell>{author.name}</TableCell>
+                  <TableCell>{author.nationality}</TableCell>
+                  <TableCell sx={{ maxWidth: 300 }}>{author.biography}</TableCell>
+                  {user?.role === 'librarian' && (
+                    <TableCell>
+                      <IconButton color="error" onClick={() => handleDeleteClick(author)}>
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={user?.role === 'librarian' ? 4 : 3} align="center">
+                  No authors found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete author "{selectedAuthor?.name}"?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog 
+        open={openAddDialog} 
+        onClose={() => setOpenAddDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Add New Author</DialogTitle>
+        <DialogContent>
+          <AddAuthor onSuccess={handleAddSuccess} />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
 
-export default AddAuthor;
+export default AuthorList;

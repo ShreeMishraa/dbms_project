@@ -26,7 +26,22 @@ const BookList = () => {
     const fetchBooks = async () => {
       try {
         const data = await getBooks()
-        setBooks(data)
+        // Transform the data to match expected structure
+        const formattedBooks = data.map(book => ({
+          id: book.book_id,
+          title: book.title,
+          genre: book.genre,
+          available_copies: book.available_copies,
+          author: { 
+            id: book.author_id, 
+            name: book.author_name || 'Unknown Author' 
+          },
+          publisher: { 
+            id: book.publisher_id, 
+            name: book.publisher_name || 'Unknown Publisher' 
+          }
+        }))
+        setBooks(formattedBooks)
         setLoading(false)
       } catch (err) {
         setError('Failed to fetch books')
@@ -41,7 +56,7 @@ const BookList = () => {
     book.author.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  if (loading) return <Typography>Loading...</Typography>
+  if (loading) return <Typography>Loading books...</Typography>
   if (error) return <Typography color="error">{error}</Typography>
 
   return (

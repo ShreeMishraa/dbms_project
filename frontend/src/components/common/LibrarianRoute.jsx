@@ -3,14 +3,14 @@ import { Navigate, Outlet } from 'react-router-dom'
 import AuthContext from '../../context/AuthContext'
 import Loader from './Loader'
 
-const ProtectedRoute = () => {
+const LibrarianRoute = () => {
   const { user, isLoading } = useContext(AuthContext)
 
   if (isLoading) {
     return <Loader />
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />
+  return user && user.role === 'librarian' ? <Outlet /> : <Navigate to="/dashboard" replace />
 }
 
-export default ProtectedRoute
+export default LibrarianRoute

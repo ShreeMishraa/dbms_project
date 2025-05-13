@@ -12,12 +12,15 @@ import {
   Box
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs from 'dayjs';
 import { reserveGDRoom } from '../../services/api';
 
 const ReserveGDRoom = ({ open, onClose, room, onSuccess }) => {
   const [reservationData, setReservationData] = useState({
     room_id: room?.id || '',
-    reservation_time: new Date(),
+    reservation_time: dayjs(),
     duration_minutes: 60
   });
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,7 @@ const ReserveGDRoom = ({ open, onClose, room, onSuccess }) => {
     try {
       await reserveGDRoom({
         ...reservationData,
+        room_id: room.id,
         reservation_time: reservationData.reservation_time.toISOString()
       });
       onSuccess();
@@ -63,14 +67,16 @@ const ReserveGDRoom = ({ open, onClose, room, onSuccess }) => {
           Capacity: {room.capacity} people
         </Typography>
         
-        <Box sx={{ mb: 2 }}>
-          <DateTimePicker
-            label="Reservation Time"
-            value={reservationData.reservation_time}
-            onChange={(newValue) => handleChange('reservation_time', newValue)}
-            minDateTime={new Date()}
-            renderInput={(params) => <TextField {...params} fullWidth />}
-          />
+        <Box sx={{ mb: 2, mt: 2 }}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DateTimePicker
+              label="Reservation Time"
+              value={reservationData.reservation_time}
+              onChange={(newValue) => handleChange('reservation_time', newValue)}
+              minDateTime={dayjs()}
+              sx={{ width: '100%' }}
+            />
+          </LocalizationProvider>
         </Box>
         
         <TextField

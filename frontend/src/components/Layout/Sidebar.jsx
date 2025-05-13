@@ -21,6 +21,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
   const studentItems = [
     { text: 'Dashboard', icon: <HomeIcon />, path: '/dashboard' },
     { text: 'Books', icon: <BookIcon />, path: '/books' },
+    { text: 'Authors', icon: <PersonIcon />, path: '/authors' },
+    { text: 'Publishers', icon: <BusinessIcon />, path: '/publishers' },
     { text: 'Reservations', icon: <ReceiptIcon />, path: '/reservations' },
     { text: 'Fines', icon: <AccountBalanceIcon />, path: '/fines' },
     { text: 'GD Rooms', icon: <MeetingRoomIcon />, path: '/gd-rooms' },
@@ -38,6 +40,20 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
     return location.pathname === path;
   };
 
+  // Common styles for all list items to ensure consistent appearance
+  const listItemStyle = {
+    '&.Mui-selected': {
+      backgroundColor: '#e3f2fd',
+      '&:hover': {
+        backgroundColor: '#bbdefb'
+      }
+    },
+    '&:hover': {
+      backgroundColor: '#e8f0fe'
+    },
+    transition: 'background-color 0.2s'
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -47,8 +63,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
         [`& .MuiDrawer-paper`]: { 
           width: drawerWidth, 
           boxSizing: 'border-box',
-          backgroundColor: '#f5f5f5'
+          backgroundColor: '#f5f5f5',
+          borderRight: '1px solid rgba(0, 0, 0, 0.12)'
         },
+        display: { xs: 'none', sm: 'block' } // Hide on mobile, show on desktop
       }}
       open={sidebarOpen}
     >
@@ -56,22 +74,22 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
       <List>
         {studentItems.map((item) => (
           <ListItem 
-            button 
             key={item.text} 
             component={Link} 
             to={item.path}
             selected={isActive(item.path)}
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: '#e3f2fd',
-                '&:hover': {
-                  backgroundColor: '#bbdefb'
-                }
-              }
-            }}
+            sx={listItemStyle}
           >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+            <ListItemIcon sx={{ color: isActive(item.path) ? 'primary.main' : 'inherit' }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText 
+              primary={item.text} 
+              primaryTypographyProps={{ 
+                color: isActive(item.path) ? 'primary' : 'inherit',
+                fontWeight: isActive(item.path) ? 'medium' : 'regular'
+              }}
+            />
           </ListItem>
         ))}
         
@@ -83,22 +101,22 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
             </ListItem>
             {librarianItems.map((item) => (
               <ListItem 
-                button 
                 key={item.text} 
                 component={Link} 
                 to={item.path}
                 selected={isActive(item.path)}
-                sx={{
-                  '&.Mui-selected': {
-                    backgroundColor: '#e3f2fd',
-                    '&:hover': {
-                      backgroundColor: '#bbdefb'
-                    }
-                  }
-                }}
+                sx={listItemStyle}
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemIcon sx={{ color: isActive(item.path) ? 'primary.main' : 'inherit' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ 
+                    color: isActive(item.path) ? 'primary' : 'inherit',
+                    fontWeight: isActive(item.path) ? 'medium' : 'regular'
+                  }}
+                />
               </ListItem>
             ))}
           </>

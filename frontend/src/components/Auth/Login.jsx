@@ -2,6 +2,7 @@ import { useState, useContext } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { TextField, Button, Typography, Container, Box } from '@mui/material'
 import AuthContext from '../../context/AuthContext'
+import LoginHelper from './LoginHelper' // Import the helper component
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -30,7 +31,7 @@ function Login() {
             {error}
           </Typography>
         )}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
           <TextField
             margin="normal"
             required
@@ -64,6 +65,9 @@ function Login() {
               <Button variant="text">Don't have an account? Sign Up</Button>
             </Link>
           </Box>
+          
+          {/* Add the login helper */}
+          <LoginHelper />
         </Box>
       </Box>
     </Container>

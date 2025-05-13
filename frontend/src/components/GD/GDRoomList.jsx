@@ -1,3 +1,4 @@
+// Update the room objects to accommodate different API response formats
 import { useState, useEffect } from 'react';
 import { 
   Table, 
@@ -31,10 +32,18 @@ const GDRoomList = () => {
   const fetchRooms = async () => {
     try {
       const data = await getGDRooms();
-      setRooms(data);
+      // Normalize the data structure to ensure it works correctly
+      const formattedRooms = data.map(room => ({
+        id: room.room_id,
+        room_name: room.room_name,
+        capacity: room.capacity,
+        reservations: room.reservations || []
+      }));
+      setRooms(formattedRooms);
       setLoading(false);
     } catch (err) {
-      setError('Failed to fetch GD rooms');
+      console.error('Failed to fetch GD rooms:', err);
+      setError('Failed to fetch GD rooms. Please try again later.');
       setLoading(false);
     }
   };
@@ -58,7 +67,7 @@ const GDRoomList = () => {
     return { text: 'Available', color: 'success' };
   };
 
-  if (loading) return <Typography>Loading...</Typography>;
+  if (loading) return <Typography>Loading GD rooms...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
@@ -79,28 +88,36 @@ const GDRoomList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rooms.map((room) => {
-              const status = getAvailabilityStatus(room);
-              return (
-                <TableRow key={room.id}>
-                  <TableCell>{room.room_name}</TableCell>
-                  <TableCell>{room.capacity}</TableCell>
-                  <TableCell>{room.reservations?.length || 0}</TableCell>
-                  <TableCell>
-                    <Chip label={status.text} color={status.color} />
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="outlined" 
-                      onClick={() => handleReserveClick(room)}
-                      disabled={status.text === 'Full'}
-                    >
-                      Reserve
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {rooms.length > 0 ? (
+              rooms.map((room) => {
+                const status = getAvailabilityStatus(room);
+                return (
+                  <TableRow key={room.id}>
+                    <TableCell>{room.room_name}</TableCell>
+                    <TableCell>{room.capacity}</TableCell>
+                    <TableCell>{room.reservations?.length || 0}</TableCell>
+                    <TableCell>
+                      <Chip label={status.text} color={status.color} />
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="outlined" 
+                        onClick={() => handleReserveClick(room)}
+                        disabled={status.text === 'Full'}
+                      >
+                        Reserve
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  No GD rooms available
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
