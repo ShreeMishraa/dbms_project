@@ -44,7 +44,13 @@ function Register() {
       setError('Passwords do not match')
       return
     }
-
+  
+    // Add password length validation
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+  
     const { confirmPassword, ...studentData } = formData
     
     const result = await register(studentData)

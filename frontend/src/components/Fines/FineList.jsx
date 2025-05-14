@@ -67,40 +67,43 @@ const FineList = () => {
   // Format date properly
   // Improve the formatDate function
   // Update the formatDate function to properly handle MySQL datetime format
-  const formatDate = (dateString) => {
-    if (!dateString) return "Not Available";
+  // Update the formatDate function to better handle null or invalid dates:
+
+const formatDate = (dateString) => {
+  if (!dateString) return "Not Available";
+  
+  try {
+    // Handle all common date formats
+    const date = new Date(dateString);
     
-    try {
-      // Handle MySQL datetime format "YYYY-MM-DD HH:MM:SS"
-      const date = new Date(dateString);
-      
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString();
-      }
-      
-      // Try alternate parsing approach
-      const parts = dateString.split(/[- :]/);
-      if (parts.length >= 3) {
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
-        const day = parseInt(parts[2]);
-        
-        const validDate = new Date(year, month, day);
-        return validDate.toLocaleDateString();
-      }
-      
-      return "Date format issue";
-    } catch (err) {
-      console.error("Date parsing error:", err);
-      return "Invalid Date";
+    if (isNaN(date.getTime())) {
+      return "Not Available";
     }
-  };
+    
+    // Return formatted date
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    }).format(date);
+    
+  } catch (err) {
+    console.error("Date parsing error:", err);
+    return "Not Available";
+  }
+};
 
   // Filter the fines based on the showPaidFines state
-  const displayFines = fines.filter(fine => {
-    const isPaid = (fine.payment_status === 'paid' || fine.status === 'paid');
-    return showPaidFines ? true : !isPaid;
-  });
+// Update the displayFines filter to exclude deleted fines
+const displayFines = fines.filter(fine => {
+  // First check if it's deleted - don't show deleted fines to students
+  const isDeleted = fine.is_deleted === 1;
+  if (isDeleted) return false;
+  
+  // Then apply the paid/unpaid filter
+  const isPaid = (fine.payment_status === 'paid' || fine.status === 'paid');
+  return showPaidFines ? true : !isPaid;
+});
 
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;

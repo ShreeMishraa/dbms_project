@@ -76,6 +76,13 @@ const handleSubmit = async (e) => {
   setLoading(true);
   setError('');
   setSuccess(false);
+
+  // Add validation for available copies not less than total copies
+  if (parseInt(bookData.available_copies) > parseInt(bookData.total_copies)) {
+    setError('Available copies cannot be greater than total copies');
+    setLoading(false);
+    return;
+  }
   
   try {
     // Simplify ISBN validation - accept 10-13 digits without hyphens

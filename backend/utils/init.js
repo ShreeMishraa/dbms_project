@@ -147,6 +147,21 @@ const initDb = async () => {
       )
     `);
 
+    // Add this inside the initDb function after creating the fines table:
+
+      // Check if 'issued_date' column exists in 'fines' table
+      const [issuedDateColumns] = await pool.promise().query(`
+        SHOW COLUMNS FROM fines LIKE 'issued_date'
+      `);
+
+      if (issuedDateColumns.length === 0) {
+        // Column doesn't exist - add it
+        await pool.promise().query(`
+          ALTER TABLE fines ADD COLUMN issued_date DATETIME DEFAULT CURRENT_TIMESTAMP
+        `);
+        console.log('✅ Added issued_date column to fines table');
+      }
+
     // Check if 'is_deleted' column exists in 'fines' table
     const [columns] = await pool.promise().query(`
       SHOW COLUMNS FROM fines LIKE 'is_deleted'

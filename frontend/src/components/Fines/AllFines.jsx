@@ -86,6 +86,7 @@ const AllFines = () => {
 
   // Update the filteredFines function
 // Replace the filteredFines function with this implementation
+// Replace the filteredFines function with this correct implementation
 const filteredFines = fines.filter((fine) => {
   // Check if searchTerm matches
   const matchesSearch = 
@@ -97,9 +98,10 @@ const filteredFines = fines.filter((fine) => {
   const isPaid = (fine.payment_status === 'paid' || fine.status === 'paid');
   const shouldShowBasedOnPayment = showPaidFines ? true : !isPaid;
   
-  // Check deletion status - IMPORTANT: Properly check numeric value or boolean
-  const isDeleted = fine.is_deleted === 1 || fine.is_deleted === true;
-  const shouldShowBasedOnDeletion = showDeletedFines ? true : !isDeleted;
+  // Check deletion status - Convert to proper boolean
+  const isDeleted = fine.is_deleted === 1;
+  // Only show deleted fines if showDeletedFines is true
+  const shouldShowBasedOnDeletion = isDeleted ? showDeletedFines : true;
   
   return matchesSearch && shouldShowBasedOnPayment && shouldShowBasedOnDeletion;
 });

@@ -76,29 +76,25 @@ export const getMyFines = async (req, res) => {
   try {
     const member_id = req.userId;
     
-    // Check if the column exists before using it
-    const [columns] = await pool.promise().query(`
-      SHOW COLUMNS FROM fines LIKE 'issued_date'
-    `);
-    
-    let query;
-    if (columns.length > 0) {
-      query = `
-        SELECT fine_id, amount, reason, payment_status, 
-               issued_date, payment_date 
-        FROM fines 
-        WHERE member_id = ?
-      `;
-    } else {
-      query = `
-        SELECT fine_id, amount, reason, payment_status, 
-               CURRENT_TIMESTAMP as issued_date, payment_date 
-        FROM fines 
-        WHERE member_id = ?
-      `;
-    }
-    
-    const [rows] = await pool.promise().query(query, [member_id]);
+    // Use a query that works whether issued_date exists or not
+    // by using COALESCE to provide a fallback (current timestamp)
+    const [rows] = await pool
+      .promise()
+      .query(`
+        SELECT 
+          fine_id, 
+          amount, 
+          reason, 
+          payment_status,
+          COALESCE(payment_date, NULL) as payment_date,
+          COALESCE(
+            (SELECT issued_date FROM fines WHERE fine_id = f.fine_id LIMIT 1),
+            CURRENT_TIMESTAMP
+          ) as issued_date
+        FROM fines f
+        WHERE member_id = ? AND (is_deleted IS NULL OR is_deleted = 0)
+      `, [member_id]);
+      
     res.json(rows);
   } catch (err) {
     console.error('Error fetching fines:', err);
@@ -108,15 +104,30 @@ export const getMyFines = async (req, res) => {
 
 // Add this function to the existing file
 
+// Update the getFinesByLibrarian function:
+
 export const getFinesByLibrarian = async (req, res) => {
   try {
     const [rows] = await pool
       .promise()
       .query(`
-        SELECT f.*, s.roll_no, CONCAT(s.first_name, ' ', s.last_name) AS student_name
+        SELECT 
+          f.fine_id, 
+          f.member_id,
+          f.amount, 
+          f.reason, 
+          f.payment_status,
+          f.is_deleted,
+          f.payment_date,
+          COALESCE(
+            (SELECT issued_date FROM fines WHERE fine_id = f.fine_id LIMIT 1),
+            CURRENT_TIMESTAMP
+          ) as issued_date,
+          s.roll_no, 
+          CONCAT(s.first_name, ' ', s.last_name) AS student_name
         FROM fines f
         JOIN students s ON f.member_id = s.member_id
-        ORDER BY f.is_deleted ASC, f.payment_status ASC, f.fine_id DESC
+        ORDER BY f.payment_status ASC, f.fine_id DESC
       `);
     res.json(rows);
   } catch (err) {
