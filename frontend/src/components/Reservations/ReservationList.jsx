@@ -21,6 +21,7 @@ import { IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { getReservations, returnBook } from '../../services/api';
 import AuthContext from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const ReservationList = () => {
   const [reservations, setReservations] = useState([]);
@@ -64,17 +65,35 @@ const ReservationList = () => {
 
   const handleReturnConfirm = async () => {
     try {
-      await returnBook(selectedReservation.id);
-      setReservations(reservations.filter(r => r.id !== selectedReservation.id));
+      // Fix: Use reservation_id instead of id
+      const reservationId = selectedReservation.reservation_id || selectedReservation.id;
+      
+      // Add detailed logging
+      console.log('Returning book with reservation ID:', reservationId);
+      
+      await returnBook(reservationId);
+      
+      // Remove this reservation from the list
+      setReservations(prev => prev.filter(r => 
+        (r.reservation_id || r.id) !== reservationId
+      ));
+      
       setOpenReturnDialog(false);
+      toast.success('Book returned successfully');
     } catch (err) {
-      setError('Failed to return book');
+      console.error('Return book error details:', err);
+      const errorMsg = err?.message || 'Failed to return book';
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase() || '';
+    
+    switch (normalizedStatus) {
       case 'active': return 'success';
+      case 'pending': return 'warning';
       case 'returned': return 'info';
       case 'overdue': return 'error';
       default: return 'default';
@@ -118,22 +137,22 @@ const ReservationList = () => {
                   <TableCell>{new Date(reservation.reserved_date).toLocaleDateString()}</TableCell>
                   <TableCell>{new Date(reservation.due_date).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={reservation.status} 
+                  <Chip 
+                      label={reservation.status || 'pending'} 
                       color={getStatusColor(reservation.status)} 
                     />
                   </TableCell>
                   <TableCell>
-  {reservation.status === 'active' && (
-    <IconButton
-      color="error"
-      aria-label="cancel reservation"
-      onClick={() => handleReturnClick(reservation)}
-    >
-      <Delete />
-    </IconButton>
-  )}
-</TableCell>
+                    {(reservation.status === 'active' || reservation.status === 'pending') && (
+                      <IconButton
+                        color="error"
+                        aria-label="cancel reservation"
+                        onClick={() => handleReturnClick(reservation)}
+                      >
+                        <Delete />
+                      </IconButton>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

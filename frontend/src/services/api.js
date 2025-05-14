@@ -163,56 +163,19 @@ export const reserveBook = async (bookData) => {
 };
 
 // Also update the returnBook function to decrement the count
-export const returnBook = async (req, res) => {
+export const returnBook = async (reservationId) => {
   try {
-    const member_id = req.userId;
-    const { reservation_id } = req.body;
-    
-    // Begin transaction
-    const connection = await pool.promise().getConnection();
-    await connection.beginTransaction();
-    
-    try {
-      const [[r]] = await connection.query(
-        'SELECT * FROM reservations WHERE reservation_id=? AND member_id=?',
-        [reservation_id, member_id]
-      );
-      
-      if (!r) {
-        await connection.rollback();
-        connection.release();
-        return res.status(404).json({ message: 'Reservation not found' });
-      }
-
-      // Update book's available copies
-      await connection.query(
-        'UPDATE books SET available_copies=available_copies+1 WHERE book_id=?',
-        [r.book_id]
-      );
-      
-      // Delete reservation
-      await connection.query(
-        'DELETE FROM reservations WHERE reservation_id=?', 
-        [reservation_id]
-      );
-      
-      // Update student's issued books count
-      await connection.query(
-        'UPDATE students SET total_books_issued = total_books_issued - 1 WHERE member_id = ?',
-        [member_id]
-      );
-      
-      await connection.commit();
-      connection.release();
-      
-      res.json({ message: 'Book returned successfully' });
-    } catch (err) {
-      await connection.rollback();
-      connection.release();
-      throw err;
+    const response = await axios.post('/api/reservations/return', {
+      reservation_id: reservationId
+    });
+    return response.data;
+  } catch (error) {
+    // Add detailed logging for troubleshooting
+    console.error('Error returning book:', error);
+    if (error.code === 'ERR_NETWORK') {
+      throw { message: 'Cannot connect to server. Please check if backend is running.' };
     }
-  } catch (err) {
-    res.status(500).json({ message: 'Return failed', error: err.message });
+    throw error.response?.data || { message: 'Failed to return book' };
   }
 };
 

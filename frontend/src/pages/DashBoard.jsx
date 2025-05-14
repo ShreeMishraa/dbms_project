@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   Typography,
   Box,
@@ -20,6 +21,8 @@ import AuthContext from '../context/AuthContext'
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext)
+  const location = useLocation()
+
   const [dashboardData, setDashboardData] = useState({
     borrowedBooks: 0,
     activeReservations: 0,
@@ -37,27 +40,36 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         if (user.role === 'student') {
-          const [reservationsResponse, finesResponse] = await Promise.all([
+          const [reservationsResponse, finesResponse, gdReservationsResponse] = await Promise.all([
             axios.get('/api/reservations').catch(() => ({ data: [] })),
-            axios.get('/api/fines').catch(() => ({ data: [] }))
-          ])
-
-          const activeReservations = (reservationsResponse.data || [])
-            .filter(reservation => reservation.status === 'active').length
-
+            axios.get('/api/fines').catch(() => ({ data: [] })),
+            axios.get('/api/gd').catch(() => ({ data: [] }))
+          ]);
+    
+          // Book reservations (active + pending)
+          const activeBookReservations = (reservationsResponse.data || [])
+            .filter(r => r.status === 'active' || r.status === 'pending')
+            .length;
+          
+          // GD room reservations (upcoming)
+          const activeGDReservations = (gdReservationsResponse.data || [])
+            .filter(r => !r.status || r.status === 'upcoming')
+            .length;
+    
+          // Total active reservations (books + GD rooms)
+          const totalActiveReservations = activeBookReservations + activeGDReservations;
+    
+          // Outstanding fines
           const outstandingFines = (finesResponse.data || [])
-            .filter(fine => fine.payment_status === 'unpaid')
-            .reduce((total, fine) => {
-              const amount = parseFloat(fine.amount || 0)
-              return total + (isNaN(amount) ? 0 : amount)
-            }, 0)
-
+            .filter(f => f.payment_status === 'unpaid')
+            .reduce((total, f) => total + Number(f.amount || 0), 0);
+    
           setDashboardData(prev => ({
             ...prev,
-            borrowedBooks: activeReservations,
-            activeReservations,
+            borrowedBooks: activeBookReservations,
+            gdReserved: activeGDReservations, 
             outstandingFines
-          }))
+          }));
         } else {
           const [booksResponse, authorsResponse, publishersResponse] = await Promise.all([
             axios.get('/api/books').catch(() => ({ data: [] })),
@@ -81,13 +93,13 @@ const Dashboard = () => {
     }
 
     fetchDashboardData()
-  }, [user])
+  }, [user, location]) // re-fetch when the route changes
 
   const studentStats = [
     { title: 'Books Borrowed', value: dashboardData.borrowedBooks, icon: <Book fontSize="large" color="primary" /> },
-    { title: 'Active Reservations', value: dashboardData.activeReservations, icon: <Receipt fontSize="large" color="primary" /> },
+    { title: 'GD Reservations', value: dashboardData.gdReserved, icon: <Receipt fontSize="large" color="primary" /> },
     { title: 'Outstanding Fines', value: `$${dashboardData.outstandingFines.toFixed(2)}`, icon: <AccountBalance fontSize="large" color="primary" /> },
-  ]
+  ];
 
   const librarianStats = [
     { title: 'Total Books', value: dashboardData.totalBooks, icon: <MenuBook fontSize="large" color="primary" /> },
@@ -114,8 +126,8 @@ const Dashboard = () => {
         <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
       ) : (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
-          {stats.map((stat, index) => (
-            <Box key={index} sx={{ width: { xs: '100%', sm: '30%' }, flexGrow: 1 }}>
+          {stats.map((stat, idx) => (
+            <Box key={idx} sx={{ width: { xs: '100%', sm: '30%' }, flexGrow: 1 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
