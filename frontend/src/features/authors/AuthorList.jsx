@@ -20,7 +20,7 @@ import {
 } from '@mui/material'
 import { Delete, Edit } from '@mui/icons-material'
 import { getAuthors, deleteAuthor } from '../../services/api'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 import AddAuthor from './AddAuthor'
 import EditAuthor from './EditAuthor'
 

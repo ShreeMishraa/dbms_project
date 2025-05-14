@@ -19,7 +19,7 @@ import {
 } from '@mui/material'
 import { Delete } from '@mui/icons-material'
 import { getGDRooms, deleteGDRoom } from '../../services/api'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 import ReserveGDRoom from './ReserveGDRoom'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'

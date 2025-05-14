@@ -15,7 +15,7 @@ import {
   Switch
 } from '@mui/material';
 import { getFines } from '../../services/api';
-import AuthContext from '../../context/AuthContext';
+import AuthContext from '../../contexts/AuthContext';
 import PayFine from './PayFine';
 
 const FineList = () => {

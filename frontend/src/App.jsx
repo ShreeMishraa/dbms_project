@@ -11,8 +11,8 @@ import {
 } from '@mui/material'
 import { Toaster } from 'react-hot-toast'
 
-import { AuthProvider } from './context/AuthContext'
-import AuthContext from './context/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
+import AuthContext from './contexts/AuthContext'
 
 // Layout Components
 import Navbar from './components/Layout/Navbar'
@@ -25,34 +25,34 @@ import Dashboard from './pages/DashBoard'
 import Profile from './pages/Profile'
 
 // Auth
-import Login from './components/Auth/Login'
-import Register from './components/Auth/Register'
+import Login from './features/auth/Login'
+import Register from './features/auth/Register'
 
 // Books & Reservations
-import BookList from './components/Books/BookList'
-import AddBook from './components/Books/AddBook'
-import ReserveBook from './components/Reservations/ReserveBook'
+import BookList from './features/books/BookList'
+import AddBook from './features/books/AddBook'
+import ReserveBook from './features/reservations/ReserveBook'
 
 // Authors & Publishers
-import AuthorList from './components/Authors/AuthorList'
-import AddAuthor from './components/Authors/AddAuthor'
-import PublisherList from './components/Publishers/PublisherList'
-import AddPublisher from './components/Publishers/AddPublisher'
+import AuthorList from './features/authors/AuthorList'
+import AddAuthor from './features/authors/AddAuthor'
+import PublisherList from './features/publishers/PublisherList'
+import AddPublisher from './features/publishers/AddPublisher'
 
 // Other Resources
-import ReservationList from './components/Reservations/ReservationList'
-import FineList from './components/Fines/FineList'
-import GDRoomList from './components/GD/GDRoomList'
-import MyGDReservations from './components/GD/MyGDReservations'
+import ReservationList from './features/reservations/ReservationList'
+import FineList from './features/fines/FineList'
+import GDRoomList from './features/gd/GDRoomList'
+import MyGDReservations from './features/gd/MyGDReservations'
 
 // Librarian-only Components
-import LibrarianBooksManage from './components/Books/LibrarianBooksManage'
-import IssueFine from './components/Fines/IssueFine'
-import AllFines from './components/Fines/AllFines'
-import AddGDRoom from './components/GD/AddGDRoom'
-import StudentList from './components/Librarian/StudentList'
-import StudentReservations from './components/Librarian/StudentReservations';
-import StudentGDReservations from './components/Librarian/StudentGDReservations';
+import LibrarianBooksManage from './features/books/LibrarianBooksManage'
+import IssueFine from './features/fines/IssueFine'
+import AllFines from './features/fines/AllFines'
+import AddGDRoom from './features/gd/AddGDRoom'
+import StudentList from './features/students/StudentList'
+import StudentReservations from './features/students/StudentReservations';
+import StudentGDReservations from './features/students/StudentGDReservations';
 
 // Common Components
 import ProtectedRoute from './components/common/ProtectedRoute'

@@ -14,7 +14,7 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import { useContext, useState } from 'react'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 // Import all needed icons

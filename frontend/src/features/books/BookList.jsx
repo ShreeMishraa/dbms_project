@@ -13,7 +13,7 @@ import {
   TextField
 } from '@mui/material'
 import { getBooks } from '../../services/api'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 
 const BookList = () => {
   const [books, setBooks] = useState([])

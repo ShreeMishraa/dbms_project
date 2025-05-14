@@ -27,7 +27,7 @@ import { Delete } from '@mui/icons-material'
 import toast from 'react-hot-toast'
 
 import { getAllFines, deleteFine } from '../../services/api'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 
 const AllFines = () => {
   const { user } = useContext(AuthContext)

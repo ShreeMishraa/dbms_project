@@ -12,8 +12,8 @@ import {
 import { AdminPanelSettings } from '@mui/icons-material'
 import toast from 'react-hot-toast'
 
-import AuthContext from '../context/AuthContext'
-import EditProfile from '../components/Profile/EditProfile'
+import AuthContext from '../contexts/AuthContext'
+import EditProfile from '../features/profile/EditProfile'
 
 const Profile = () => {
   const { user } = useContext(AuthContext)

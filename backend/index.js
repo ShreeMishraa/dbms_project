@@ -19,7 +19,6 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-// initialization
 const startServer = async () => {
   try {
     await pool.promise().getConnection();

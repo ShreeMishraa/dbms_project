@@ -20,7 +20,7 @@ import {
 import { Delete, Edit } from '@mui/icons-material'
 
 import { getPublishers, deletePublisher } from '../../services/api'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 
 // Dialog forms
 import AddPublisher from './AddPublisher'

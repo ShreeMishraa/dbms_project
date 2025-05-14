@@ -17,7 +17,7 @@ import {
   Business
 } from '@mui/icons-material'
 import axios from 'axios'
-import AuthContext from '../context/AuthContext'
+import AuthContext from '../contexts/AuthContext'
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext)

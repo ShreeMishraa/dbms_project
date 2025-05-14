@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { TextField, Button, Typography, Container, Box } from '@mui/material'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 import LoginHelper from './LoginHelper' // Import the helper component
 
 function Login() {

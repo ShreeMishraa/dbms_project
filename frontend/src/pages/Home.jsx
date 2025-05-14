@@ -1,7 +1,7 @@
 import { Typography, Box, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { useContext } from 'react'
-import AuthContext from '../context/AuthContext'
+import AuthContext from '../contexts/AuthContext'
 
 const Home = () => {
   const { user } = useContext(AuthContext)

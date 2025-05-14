@@ -20,7 +20,7 @@ import {
 import { IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { getReservations, returnBook } from '../../services/api';
-import AuthContext from '../../context/AuthContext';
+import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const ReservationList = () => {

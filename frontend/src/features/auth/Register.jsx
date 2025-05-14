@@ -11,7 +11,7 @@ import {
   Select,
   MenuItem
 } from '@mui/material'
-import AuthContext from '../../context/AuthContext'
+import AuthContext from '../../contexts/AuthContext'
 
 function Register() {
   const [formData, setFormData] = useState({
