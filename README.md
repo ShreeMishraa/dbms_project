@@ -1,8 +1,6 @@
 # Library Management System
 A complete full-stack application for managing library resources, users, and services. This system manages books, reservations, group discussion rooms, and fines in a user-friendly interface with separate roles for students and librarians.
 
-![Library Management System](https://placeholder-for-screenshot.png)
-
 ## Technologies Used
 
 ### Frontend
