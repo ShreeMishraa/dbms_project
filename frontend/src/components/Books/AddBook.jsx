@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 import { 
   TextField, 
   Button, 
@@ -11,9 +11,9 @@ import {
   CircularProgress,
   Alert,
   Paper
-} from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { addBook, getAuthors, getPublishers } from '../../services/api';
+} from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { addBook, getAuthors, getPublishers } from '../../services/api'
 
 const AddBook = () => {
   const [bookData, setBookData] = useState({
@@ -24,14 +24,14 @@ const AddBook = () => {
     author_id: '',
     publisher_id: '',
     published_year: new Date().getFullYear()
-  });
+  })
 
-  const [authors, setAuthors] = useState([]);
-  const [publishers, setPublishers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const navigate = useNavigate();
+  const [authors, setAuthors] = useState([])
+  const [publishers, setPublishers] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,35 +39,57 @@ const AddBook = () => {
         const [authorsData, publishersData] = await Promise.all([
           getAuthors(),
           getPublishers()
-        ]);
-        setAuthors(authorsData);
-        setPublishers(publishersData);
+        ])
+        
+        // Format authors and publishers for consistent IDs
+        const formattedAuthors = authorsData.map(author => ({
+          id: author.author_id || author.id,
+          name: author.name || 'Unknown Author'
+        }))
+        
+        const formattedPublishers = publishersData.map(publisher => ({
+          id: publisher.publisher_id || publisher.id,
+          name: publisher.name || 'Unknown Publisher'
+        }))
+        
+        setAuthors(formattedAuthors)
+        setPublishers(formattedPublishers)
       } catch (err) {
-        setError('Failed to fetch required data');
+        setError('Failed to fetch required data')
       }
-    };
-    fetchData();
-  }, []);
+    }
+    fetchData()
+  }, [])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setBookData(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
+    }))
+  }
 
-  const handleSubmit = async (e) => {
+   // Update the handleSubmit function to ensure proper ISBN format
+   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess(false);
     
     try {
+      // Validate ISBN format (must be 10 or 13 digits)
+      const cleanIsbn = bookData.isbn.replace(/[-\s]/g, '');
+      if (!/^(?:\d{10}|\d{13})$/.test(cleanIsbn)) {
+        throw new Error('ISBN must be 10 or 13 digits without spaces or hyphens');
+      }
+      
       await addBook({
         ...bookData,
+        isbn: cleanIsbn, // Send clean ISBN
         total_copies: parseInt(bookData.total_copies),
-        published_year: parseInt(bookData.published_year)
+        published_year: parseInt(bookData.published_year),
+        author_id: parseInt(bookData.author_id),
+        publisher_id: parseInt(bookData.publisher_id)
       });
       setSuccess(true);
       setTimeout(() => navigate('/books'), 1500);
@@ -78,8 +100,8 @@ const AddBook = () => {
     }
   };
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - i)
 
   return (
     <Paper elevation={3} sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
@@ -112,7 +134,7 @@ const AddBook = () => {
           required
           label="ISBN"
           name="isbn"
-          value={bookData.isbn}
+          value={bookData.isbn || ''}
           onChange={handleChange}
           fullWidth
         />
@@ -121,7 +143,7 @@ const AddBook = () => {
           required
           label="Title"
           name="title"
-          value={bookData.title}
+          value={bookData.title || ''}
           onChange={handleChange}
           fullWidth
         />
@@ -130,7 +152,7 @@ const AddBook = () => {
           required
           label="Genre"
           name="genre"
-          value={bookData.genre}
+          value={bookData.genre || ''}
           onChange={handleChange}
           fullWidth
         />
@@ -140,7 +162,7 @@ const AddBook = () => {
           label="Total Copies"
           name="total_copies"
           type="number"
-          value={bookData.total_copies}
+          value={bookData.total_copies || 1}
           onChange={handleChange}
           inputProps={{ min: 1 }}
           fullWidth
@@ -150,7 +172,7 @@ const AddBook = () => {
           <InputLabel>Author</InputLabel>
           <Select
             name="author_id"
-            value={bookData.author_id}
+            value={bookData.author_id || ''}
             label="Author"
             onChange={handleChange}
           >
@@ -166,7 +188,7 @@ const AddBook = () => {
           <InputLabel>Publisher</InputLabel>
           <Select
             name="publisher_id"
-            value={bookData.publisher_id}
+            value={bookData.publisher_id || ''}
             label="Publisher"
             onChange={handleChange}
           >
@@ -182,7 +204,7 @@ const AddBook = () => {
           <InputLabel>Published Year</InputLabel>
           <Select
             name="published_year"
-            value={bookData.published_year}
+            value={bookData.published_year || currentYear}
             label="Published Year"
             onChange={handleChange}
           >
@@ -213,7 +235,7 @@ const AddBook = () => {
         </Box>
       </Box>
     </Paper>
-  );
-};
+  )
+}
 
-export default AddBook;
+export default AddBook

@@ -102,15 +102,32 @@ export const addAuthor = async (authorData) => {
   }
 }
 
-export const deleteAuthor = async (id) => {
+// Add deleteAuthor function
+// Authors Management
+export const deleteAuthor = async (authorId) => {
   try {
-    const response = await axios.delete(`/api/authors/${id}`)
-    return response.data
+    const response = await axios.delete(`/api/authors/${authorId}`);
+    return response.data;
   } catch (error) {
-    console.error('Error deleting author:', error)
-    throw error
+    console.error('Error deleting author:', error);
+    throw new Error('Failed to delete author');
   }
-}
+};
+
+// Publishers Management
+// Publishers Management
+export const deletePublisher = async (publisherId) => {
+  try {
+    if (!publisherId) {
+      throw new Error('Publisher ID is required');
+    }
+    const response = await axios.delete(`/api/publishers/${publisherId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting publisher:', error);
+    throw new Error('Failed to delete publisher');
+  }
+};
 
 // ------------------ Publishers ------------------
 export const getPublishers = async () => {
@@ -133,26 +150,116 @@ export const addPublisher = async (publisherData) => {
   }
 }
 
-export const deletePublisher = async (id) => {
-  try {
-    const response = await axios.delete(`/api/publishers/${id}`)
-    return response.data
-  } catch (error) {
-    console.error('Error deleting publisher:', error)
-    throw error
-  }
-}
 
 // ------------------ Reservations ------------------
-export const reserveBook = async (bookId) => {
+// Update the reserveBook function
+export const reserveBook = async (req, res) => {
   try {
-    const response = await axios.post('/api/reservations', { book_id: bookId })
-    return response.data
-  } catch (error) {
-    console.error('Error reserving book:', error)
-    throw error
+    const member_id = req.userId;
+    const { book_id } = req.body;
+    
+    // Begin transaction
+    const connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      const [[book]] = await connection.query(
+        'SELECT available_copies FROM books WHERE book_id=?', 
+        [book_id]
+      );
+      
+      if (!book || book.available_copies < 1) {
+        await connection.rollback();
+        connection.release();
+        return res.status(400).json({ message: 'Book not available' });
+      }
+
+      // Create reservation
+      const [result] = await connection.query(
+        'INSERT INTO reservations(member_id,book_id) VALUES(?,?)',
+        [member_id, book_id]
+      );
+      
+      // Update available copies
+      await connection.query(
+        'UPDATE books SET available_copies=available_copies-1 WHERE book_id=?',
+        [book_id]
+      );
+      
+      // Update student's issued books count
+      await connection.query(
+        'UPDATE students SET total_books_issued = total_books_issued + 1 WHERE member_id = ?',
+        [member_id]
+      );
+      
+      await connection.commit();
+      connection.release();
+      
+      res.status(201).json({ reservationId: result.insertId });
+    } catch (err) {
+      await connection.rollback();
+      connection.release();
+      throw err;
+    }
+    
+  } catch (err) {
+    res.status(500).json({ message: 'Reservation failed', error: err.message });
   }
-}
+};
+
+// Also update the returnBook function to decrement the count
+export const returnBook = async (req, res) => {
+  try {
+    const member_id = req.userId;
+    const { reservation_id } = req.body;
+    
+    // Begin transaction
+    const connection = await pool.promise().getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      const [[r]] = await connection.query(
+        'SELECT * FROM reservations WHERE reservation_id=? AND member_id=?',
+        [reservation_id, member_id]
+      );
+      
+      if (!r) {
+        await connection.rollback();
+        connection.release();
+        return res.status(404).json({ message: 'Reservation not found' });
+      }
+
+      // Update book's available copies
+      await connection.query(
+        'UPDATE books SET available_copies=available_copies+1 WHERE book_id=?',
+        [r.book_id]
+      );
+      
+      // Delete reservation
+      await connection.query(
+        'DELETE FROM reservations WHERE reservation_id=?', 
+        [reservation_id]
+      );
+      
+      // Update student's issued books count
+      await connection.query(
+        'UPDATE students SET total_books_issued = total_books_issued - 1 WHERE member_id = ?',
+        [member_id]
+      );
+      
+      await connection.commit();
+      connection.release();
+      
+      res.json({ message: 'Book returned successfully' });
+    } catch (err) {
+      await connection.rollback();
+      connection.release();
+      throw err;
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Return failed', error: err.message });
+  }
+};
 
 export const getReservations = async () => {
   try {
@@ -164,15 +271,6 @@ export const getReservations = async () => {
   }
 }
 
-export const returnBook = async (reservationId) => {
-  try {
-    const response = await axios.post('/api/reservations/return', { reservation_id: reservationId })
-    return response.data
-  } catch (error) {
-    console.error('Error returning book:', error)
-    throw error
-  }
-}
 
 // ------------------ Fines ------------------
 export const getFines = async () => {
@@ -187,11 +285,11 @@ export const getFines = async () => {
 
 export const payFine = async (fineId) => {
   try {
-    const response = await axios.post('/api/fines/pay', { fine_id: fineId })
-    return response.data
+    const response = await axios.post('/api/fines/pay', { fine_id: fineId });
+    return response.data;
   } catch (error) {
-    console.error('Error paying fine:', error)
-    throw error
+    console.error('Error paying fine:', error);
+    throw error;
   }
 }
 
@@ -243,5 +341,201 @@ export const cancelGDReservation = async (reservationId) => {
       throw { message: 'Cannot connect to server. Please check if backend is running.' };
     }
     throw error.response?.data || { message: 'Failed to cancel GD reservation' };
+  }
+};
+
+// Add these librarian-specific API functions
+
+// Books Management
+export const deleteBook = async (bookId) => {
+  try {
+    const response = await axios.delete(`/api/books/${bookId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    throw error.response?.data || { message: 'Failed to delete book' };
+  }
+};
+
+export const updateAuthor = async (authorId, authorData) => {
+  try {
+    const response = await axios.put(`/api/authors/${authorId}`, authorData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating author:', error);
+    throw error;
+  }
+};
+
+export const updateBook = async (bookId, bookData) => {
+  try {
+    const response = await axios.put(`/api/books/${bookId}`, bookData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating book:', error);
+    throw error.response?.data || { message: 'Failed to update book' };
+  }
+};
+
+// Update or add this function
+
+// Student Management
+export const getStudents = async () => {
+  try {
+    const response = await axios.get('/api/students/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    throw error;
+  }
+};
+
+export const deleteStudent = async (studentId) => {
+  try {
+    const response = await axios.delete(`/api/students/${studentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error;
+  }
+};
+
+// Fine Management
+export const getAllFines = async () => {
+  try {
+    const response = await axios.get('/api/fines/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all fines:', error);
+    throw new Error('Failed to fetch fines');
+  }
+};
+
+export const issueFine = async (fineData) => {
+  try {
+    const response = await axios.post('/api/fines', fineData);
+    return response.data;
+  } catch (error) {
+    console.error('Error issuing fine:', error);
+    throw error.response?.data || { message: 'Failed to issue fine' };
+  }
+};
+
+// GD Room Management
+export const addGDRoom = async (roomData) => {
+  try {
+    const response = await axios.post('/api/gd/rooms', roomData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding GD room:', error);
+    throw error.response?.data || { message: 'Failed to add GD room' };
+  }
+};
+
+export const deleteGDRoom = async (roomId) => {
+  try {
+    const response = await axios.delete(`/api/gd/rooms/${roomId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting GD room:', error);
+    throw error.response?.data || { message: 'Failed to delete GD room' };
+  }
+};
+
+// Add getAllStudents function for librarian use
+export const getAllStudents = async (req, res) => {
+  try {
+    const [students] = await pool.promise().query(`
+      SELECT member_id, roll_no, first_name, last_name, email, phone, 
+             dob, age, membership_type, total_books_issued
+      FROM students
+    `);
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch students', error: error.message });
+  }
+};
+
+// Add this function
+export const updateStudent = async (studentId, studentData) => {
+  try {
+    const response = await axios.put(`/api/students/${studentId}`, studentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating student:', error);
+    throw error;
+  }
+};
+
+export const updatePublisher = async (publisherId, publisherData) => {
+  try {
+    const response = await axios.put(`/api/publishers/${publisherId}`, publisherData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating publisher:', error);
+    throw error.response?.data || { message: 'Failed to update publisher' };
+  }
+};
+
+export const deleteFine = async (fineId) => {
+  try {
+    const response = await axios.delete(`/api/fines/${fineId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting fine:', error);
+    throw error.response?.data || { message: 'Failed to delete fine' };
+  }
+};
+
+export const updateProfile = async (profileData) => {
+  try {
+    const response = await axios.put('/api/students/profile', profileData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error.response?.data || { message: 'Failed to update profile' };
+  }
+};
+
+
+
+// Add these new functions
+export const getAllReservations = async () => {
+  try {
+    const response = await axios.get('/api/reservations/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all reservations:', error);
+    throw error;
+  }
+};
+
+export const deleteReservation = async (reservationId) => {
+  try {
+    const response = await axios.delete(`/api/reservations/${reservationId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting reservation:', error);
+    throw error;
+  }
+};
+
+export const getAllGDReservations = async () => {
+  try {
+    const response = await axios.get('/api/gd/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all GD reservations:', error);
+    throw error;
+  }
+};
+
+export const deleteGDReservation = async (reservationId) => {
+  try {
+    const response = await axios.delete(`/api/gd/admin/${reservationId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting GD reservation:', error);
+    throw error;
   }
 };

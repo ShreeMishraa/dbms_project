@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  createFine, payFine, getMyFines
+  createFine, payFine, getMyFines, getFinesByLibrarian, deleteFine
 } from '../controllers/fineController.js';
 import { authMiddleware, isAdmin, isStudent } from '../utils/auth.js';
 import { body, validationResult } from 'express-validator';
@@ -18,8 +18,13 @@ const validateFine = [
   }
 ];
 
+
+// Add this route to the existing router
+router.get('/all', authMiddleware, isAdmin, getFinesByLibrarian);
 router.post('/', authMiddleware, isAdmin, validateFine, createFine);
 router.post('/pay', authMiddleware, isStudent, payFine);
 router.get('/', authMiddleware, isStudent, getMyFines);
+router.delete('/:id', authMiddleware, isAdmin, deleteFine); // Add this route
+
 
 export default router;

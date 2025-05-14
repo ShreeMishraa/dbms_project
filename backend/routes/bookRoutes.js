@@ -1,5 +1,10 @@
 import express from 'express';
-import { addBook, getAllBooks } from '../controllers/bookController.js';
+import { 
+  addBook, 
+  getAllBooks, 
+  deleteBook, 
+  updateBook, getAllReservations, deleteReservation
+} from '../controllers/bookController.js';
 import { authMiddleware, isAdmin } from '../utils/auth.js';
 import { body, validationResult } from 'express-validator';
 
@@ -17,6 +22,10 @@ const validateBook = [
 ];
 
 router.post('/', authMiddleware, isAdmin, validateBook, addBook);
+router.put('/:id', authMiddleware, isAdmin, updateBook);
+router.delete('/:id', authMiddleware, isAdmin, deleteBook);
 router.get('/', getAllBooks);
+router.get('/all', authMiddleware, isAdmin, getAllReservations);
+router.delete('/:id', authMiddleware, isAdmin, deleteReservation);
 
 export default router;

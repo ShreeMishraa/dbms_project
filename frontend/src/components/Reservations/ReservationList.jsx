@@ -17,6 +17,7 @@ import {
   DialogActions,
   CircularProgress
 } from '@mui/material';
+import { Delete } from '@mui/icons-material';
 import { getReservations, returnBook } from '../../services/api';
 import AuthContext from '../../context/AuthContext';
 
@@ -35,7 +36,6 @@ const ReservationList = () => {
   const fetchReservations = async () => {
     try {
       const data = await getReservations();
-      // Transform data to ensure it has the expected structure
       const formattedData = data.map(reservation => ({
         id: reservation.reservation_id,
         book: {
@@ -67,7 +67,7 @@ const ReservationList = () => {
       setReservations(reservations.filter(r => r.id !== selectedReservation.id));
       setOpenReturnDialog(false);
     } catch (err) {
-      setError('Failed to return book');
+      setError('Failed to cancel reservation');
     }
   };
 
@@ -125,10 +125,12 @@ const ReservationList = () => {
                   <TableCell>
                     {reservation.status === 'active' && (
                       <Button 
-                        variant="outlined" 
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Delete />}
                         onClick={() => handleReturnClick(reservation)}
                       >
-                        Return
+                        Cancel Reservation
                       </Button>
                     )}
                   </TableCell>
@@ -140,13 +142,13 @@ const ReservationList = () => {
       )}
 
       <Dialog open={openReturnDialog} onClose={() => setOpenReturnDialog(false)}>
-        <DialogTitle>Confirm Return</DialogTitle>
+        <DialogTitle>Cancel Reservation</DialogTitle>
         <DialogContent>
-          Are you sure you want to return "{selectedReservation?.book?.title || 'this book'}"?
+          Are you sure you want to cancel your reservation for "{selectedReservation?.book?.title || 'this book'}"?
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenReturnDialog(false)}>Cancel</Button>
-          <Button onClick={handleReturnConfirm} color="primary">Confirm</Button>
+          <Button onClick={() => setOpenReturnDialog(false)}>Keep Reservation</Button>
+          <Button onClick={handleReturnConfirm} color="error">Cancel Reservation</Button>
         </DialogActions>
       </Dialog>
     </Box>

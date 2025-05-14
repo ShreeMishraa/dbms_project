@@ -86,3 +86,69 @@ export const cancelGD = async (req, res) => {
     res.status(500).json({ message: 'Cancel failed', error: err.message });
   }
 };
+
+// Add this function
+export const deleteRoom = async (req, res) => {
+  try {
+    const { room_id } = req.params;
+    
+    // Check if room exists
+    const [[room]] = await pool
+      .promise()
+      .query('SELECT * FROM gd_rooms WHERE room_id = ?', [room_id]);
+      
+    if (!room) {
+      return res.status(404).json({ message: 'GD room not found' });
+    }
+    
+    // Delete the room
+    await pool.promise().query('DELETE FROM gd_rooms WHERE room_id = ?', [room_id]);
+    res.json({ message: 'GD room deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting GD room:', err);
+    res.status(500).json({ message: 'Failed to delete GD room', error: err.message });
+  }
+};
+
+export const getAllGDReservations = async (req, res) => {
+  try {
+    const [rows] = await pool
+      .promise()
+      .query(`
+        SELECT g.*, r.room_name, 
+               CONCAT(s.first_name, ' ', s.last_name) as student_name,
+               s.roll_no
+        FROM gd_reservations g
+        JOIN gd_rooms r ON g.room_id = r.room_id
+        JOIN students s ON g.member_id = s.member_id
+        ORDER BY g.reservation_time DESC
+      `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching all GD reservations:', err);
+    res.status(500).json({ message: 'Failed to fetch GD reservations' });
+  }
+};
+
+export const deleteGDReservation = async (req, res) => {
+  try {
+    const { gd_reservation_id } = req.params;
+    
+    // Check if reservation exists
+    const [[reservation]] = await pool
+      .promise()
+      .query('SELECT * FROM gd_reservations WHERE gd_reservation_id = ?', [gd_reservation_id]);
+      
+    if (!reservation) {
+      return res.status(404).json({ message: 'GD reservation not found' });
+    }
+    
+    // Delete the reservation
+    await pool.promise().query('DELETE FROM gd_reservations WHERE gd_reservation_id = ?', [gd_reservation_id]);
+    
+    res.json({ message: 'GD reservation deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting GD reservation:', err);
+    res.status(500).json({ message: 'Failed to delete GD reservation' });
+  }
+};

@@ -1,6 +1,16 @@
-import { useState, useContext } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { Box, CssBaseline, Alert, AlertTitle, Container, Button } from '@mui/material'
+import React, { useState, useContext } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import {
+  Box,
+  CssBaseline,
+  Alert,
+  AlertTitle,
+  Container,
+  Button,
+  Toolbar
+} from '@mui/material'
+import { Toaster } from 'react-hot-toast'
+
 import { AuthProvider } from './context/AuthContext'
 import AuthContext from './context/AuthContext'
 
@@ -25,7 +35,9 @@ import ReserveBook from './components/Reservations/ReserveBook'
 
 // Authors & Publishers
 import AuthorList from './components/Authors/AuthorList'
+import AddAuthor from './components/Authors/AddAuthor'
 import PublisherList from './components/Publishers/PublisherList'
+import AddPublisher from './components/Publishers/AddPublisher'
 
 // Other Resources
 import ReservationList from './components/Reservations/ReservationList'
@@ -33,22 +45,29 @@ import FineList from './components/Fines/FineList'
 import GDRoomList from './components/GD/GDRoomList'
 import MyGDReservations from './components/GD/MyGDReservations'
 
+// Librarian-only Components
+import LibrarianBooksManage from './components/Librarian/LibrarianBooksManage'
+import IssueFine from './components/Librarian/IssueFine'
+import AllFines from './components/Librarian/AllFines'
+import AddGDRoom from './components/Librarian/AddGDRoom'
+import StudentList from './components/Librarian/StudentList'
+import StudentReservations from './components/Librarian/StudentReservations';
+import StudentGDReservations from './components/Librarian/StudentGDReservations';
+
 // Common Components
 import ProtectedRoute from './components/common/ProtectedRoute'
 import LibrarianRoute from './components/common/LibrarianRoute'
 import Loader from './components/common/Loader'
-import BackendErrorAlert from './components/common/BackendErrorAlert'
 import ErrorBoundary from './components/common/ErrorBoundary'
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const { user, isLoading, backendError } = useContext(AuthContext)
-  const path = window.location.pathname
+  const location = useLocation()
 
   if (isLoading) return <Loader />
 
-  // Full-page backend-down alert (except on auth pages)
-  if (backendError && path !== '/login' && path !== '/register') {
+  if (backendError && !['/login', '/register'].includes(location.pathname)) {
     return (
       <Container maxWidth="sm" sx={{ mt: 10 }}>
         <Alert severity="error" variant="outlined" sx={{ p: 3 }}>
@@ -77,35 +96,40 @@ function AppContent() {
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'hidden' }}>
       <CssBaseline />
+      {/* Navbar */}
+      {user && <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />}
 
-      <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      {user && (
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          userRole={user.role}
-        />
-      )}
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'auto' }}>
+        {/* Sidebar */}
+        {user && (
+          <Sidebar
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            userRole={user.role}
+          />
+        )}
 
-      {/* Main area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          mt: 8,
-          ml: user ? { sm: `${sidebarOpen ? 240 : 0}px` } : 0,
-          transition: 'margin 0.2s',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 'calc(100vh - 64px)'
-        }}
-      >
-        <Box sx={{ flexGrow: 1 }}>
+        {/* Main content area */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            mt: user ? 8 : 0,
+            width: {
+              sm: `calc(100% - ${sidebarOpen && user ? 240 : 0}px)`
+            },
+            ml: {
+              sm: sidebarOpen && user ? '240px' : 0
+            },
+            transition: 'margin 225ms cubic-bezier(0,0,0.2,1)'
+          }}
+        >
+          {user && <Toolbar />}
+
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route
               path="/login"
@@ -116,84 +140,46 @@ function AppContent() {
               element={user ? <Navigate to="/dashboard" /> : <Register />}
             />
 
-            {/* Authenticated Users */}
             <Route element={<ProtectedRoute />}>
-              <Route
-                path="/dashboard"
-                element={
-                  <ErrorBoundary>
-                    <Dashboard />
-                  </ErrorBoundary>
-                }
-              />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
 
-              <Route
-                path="/books"
-                element={
-                  <ErrorBoundary>
-                    <BookList />
-                  </ErrorBoundary>
-                }
-              />
+              <Route path="/books" element={<BookList />} />
               <Route path="/books/reserve" element={<ReserveBook />} />
 
-              <Route
-                path="/reservations"
-                element={
-                  <ErrorBoundary>
-                    <ReservationList />
-                  </ErrorBoundary>
-                }
-              />
+              <Route path="/authors" element={<AuthorList />} />
+              <Route path="/publishers" element={<PublisherList />} />
+
+              <Route path="/reservations" element={<ReservationList />} />
               <Route path="/fines" element={<FineList />} />
+
               <Route path="/gd-rooms" element={<GDRoomList />} />
+              <Route path="/my-gd-reservations" element={<MyGDReservations />} />
 
-              <Route
-                path="/my-gd-reservations"
-                element={
-                  <ErrorBoundary>
-                    <MyGDReservations />
-                  </ErrorBoundary>
-                }
-              />
+              <Route path="/librarian/students" element={<StudentList />} />
             </Route>
 
-            {/* Librarian-only Routes */}
             <Route element={<LibrarianRoute />}>
+              <Route path="/books/add" element={<AddBook />} />
               <Route
-                path="/books/add"
-                element={
-                  <ErrorBoundary>
-                    <AddBook />
-                  </ErrorBoundary>
-                }
+                path="/librarian/books/manage"
+                element={<LibrarianBooksManage />}
               />
-              <Route
-                path="/authors"
-                element={
-                  <ErrorBoundary>
-                    <AuthorList />
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="/publishers"
-                element={
-                  <ErrorBoundary>
-                    <PublisherList />
-                  </ErrorBoundary>
-                }
-              />
+              <Route path="/authors/add" element={<AddAuthor />} />
+              <Route path="/publishers/add" element={<AddPublisher />} />
+              <Route path="/librarian/fines/issue" element={<IssueFine />} />
+              <Route path="/librarian/fines/all" element={<AllFines />} />
+              <Route path="/librarian/gd-rooms/add" element={<AddGDRoom />} />
+              <Route path="/librarian/reservations/books" element={<StudentReservations />} />
+              <Route path="/librarian/reservations/gd" element={<StudentGDReservations />} />
             </Route>
 
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Box>
-
-        <Footer />
       </Box>
+
+      <Footer />
     </Box>
   )
 }
@@ -201,7 +187,10 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+      <Toaster position="top-right" />
     </AuthProvider>
   )
 }

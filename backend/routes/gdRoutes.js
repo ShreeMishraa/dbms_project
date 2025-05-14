@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   createRoom, getAllRooms,
-  reserveGD, getMyGD, cancelGD
+  reserveGD, getMyGD, cancelGD, deleteRoom, getAllGDReservations, deleteGDReservation
 } from '../controllers/gdController.js';
 import { authMiddleware, isAdmin, isStudent } from '../utils/auth.js';
 import { body, validationResult } from 'express-validator';
@@ -35,5 +35,8 @@ router.get('/rooms', getAllRooms);
 router.post('/', authMiddleware, isStudent, validateGD, reserveGD);
 router.get('/', authMiddleware, isStudent, getMyGD);
 router.delete('/:gd_reservation_id', authMiddleware, isStudent, cancelGD);
+router.delete('/rooms/:room_id', authMiddleware, isAdmin, deleteRoom);
+router.get('/all', authMiddleware, isAdmin, getAllGDReservations);
+router.delete('/admin/:gd_reservation_id', authMiddleware, isAdmin, deleteGDReservation);
 
 export default router;

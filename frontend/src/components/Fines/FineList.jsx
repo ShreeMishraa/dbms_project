@@ -49,12 +49,44 @@ const FineList = () => {
     fetchFines();
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'paid': return 'success';
-      case 'pending': return 'warning';
-      case 'overdue': return 'error';
-      default: return 'default';
+  // Ensure status is properly formatted and displayed
+  const getStatusChip = (status) => {
+    // Convert any status format to a standard format
+    const normalizedStatus = (status || "unpaid").toLowerCase();
+    
+    switch (normalizedStatus) {
+      case 'paid': return <Chip label="Paid" color="success" size="small" />;
+      case 'unpaid': return <Chip label="Unpaid" color="error" size="small" />;
+      default: return <Chip label={status || "Unknown"} color="default" size="small" />;
+    }
+  };
+  
+  // Format date properly
+  // Improve the formatDate function
+  // Update the formatDate function to properly handle MySQL datetime format
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not Available";
+    
+    try {
+      // For MySQL datetime format
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) {
+        // Try parsing as MySQL format (YYYY-MM-DD HH:MM:SS)
+        const parts = dateString.split(/[- :]/);
+        if (parts.length >= 3) {
+          // At least has YYYY-MM-DD
+          const newDate = new Date(parts[0], parts[1]-1, parts[2]);
+          if (!isNaN(newDate.getTime())) {
+            return newDate.toLocaleDateString();
+          }
+        }
+        return "Invalid Date";
+      }
+      
+      return date.toLocaleDateString();
+    } catch {
+      return "Invalid Date";
     }
   };
 
@@ -80,18 +112,15 @@ const FineList = () => {
           </TableHead>
           <TableBody>
             {fines.map((fine) => (
-              <TableRow key={fine.id}>
-                <TableCell>${fine.amount.toFixed(2)}</TableCell>
+              <TableRow key={fine.fine_id || fine.id}>
+                <TableCell>${parseFloat(fine.amount || 0).toFixed(2)}</TableCell>
                 <TableCell>{fine.reason}</TableCell>
-                <TableCell>{new Date(fine.issued_date).toLocaleDateString()}</TableCell>
+                <TableCell>{formatDate(fine.issued_date)}</TableCell>
                 <TableCell>
-                  <Chip 
-                    label={fine.status} 
-                    color={getStatusColor(fine.status)} 
-                  />
+                  {getStatusChip(fine.payment_status || fine.status)}
                 </TableCell>
                 <TableCell>
-                  {fine.status === 'pending' && (
+                  {(fine.payment_status === 'unpaid' || fine.status === 'unpaid') && (
                     <Button 
                       variant="outlined" 
                       onClick={() => handlePayClick(fine)}

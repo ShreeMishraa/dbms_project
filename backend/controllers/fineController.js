@@ -73,14 +73,69 @@ export const payFine = async (req, res) => {
 };
 
 // Student-only: List my fines
+// Update the getMyFines function
 export const getMyFines = async (req, res) => {
   try {
     const member_id = req.userId;
+    
+    // Fix the query to handle possible missing issued_date field
     const [rows] = await pool
       .promise()
-      .query('SELECT * FROM fines WHERE member_id = ?', [member_id]);
+      .query(`
+        SELECT fine_id, amount, reason, payment_status, 
+               IFNULL(issued_date, CURRENT_TIMESTAMP) as issued_date, 
+               payment_date 
+        FROM fines 
+        WHERE member_id = ?
+      `, [member_id]);
+      
     res.json(rows);
   } catch (err) {
+    console.error('Error fetching fines:', err);
     res.status(500).json({ message: 'Failed to fetch fines', error: err.message });
+  }
+};
+
+// Add this function to the existing file
+
+export const getFinesByLibrarian = async (req, res) => {
+  try {
+    const [rows] = await pool
+      .promise()
+      .query(`
+        SELECT f.*, s.roll_no, CONCAT(s.first_name, ' ', s.last_name) AS student_name
+        FROM fines f
+        JOIN students s ON f.member_id = s.member_id
+        ORDER BY f.payment_status ASC, f.fine_id DESC
+      `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching fines by librarian:', err);
+    res.status(500).json({ message: 'Failed to fetch fines', error: err.message });
+  }
+};
+
+// Add this function to the existing file
+
+export const deleteFine = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if fine exists
+    const [[fine]] = await pool
+      .promise()
+      .query('SELECT * FROM fines WHERE fine_id = ?', [id]);
+      
+    if (!fine) {
+      return res.status(404).json({ message: 'Fine not found' });
+    }
+    
+    // Delete the fine
+    await pool.promise().query('DELETE FROM fines WHERE fine_id = ?', [id]);
+    
+    res.json({ message: 'Fine deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting fine:', err);
+    res.status(500).json({ message: 'Failed to delete fine', error: err.message });
   }
 };

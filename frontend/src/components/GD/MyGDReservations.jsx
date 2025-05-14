@@ -149,15 +149,17 @@ const MyGDReservations = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {!isPast && status !== 'cancelled' && (
-                        <IconButton 
-                          color="error" 
-                          onClick={() => handleCancelClick(reservation)}
-                        >
-                          <Delete />
-                        </IconButton>
-                      )}
-                    </TableCell>
+                    {!isPast && status !== 'cancelled' && (
+                      <Button 
+                        variant="outlined" 
+                        color="error"
+                        startIcon={<Delete />}
+                        onClick={() => handleCancelClick(reservation)}
+                      >
+                        Cancel Reservation
+                      </Button>
+                    )}
+                  </TableCell>
                   </TableRow>
                 );
               })}

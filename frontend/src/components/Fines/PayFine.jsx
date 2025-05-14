@@ -21,7 +21,9 @@ const PayFine = ({ open, onClose, fine, onSuccess }) => {
     setError('');
     
     try {
-      await payFine(fine.id);
+      // Use the correct ID property (fine_id from database or id from frontend)
+      const fineId = fine.fine_id || fine.id;
+      await payFine(fineId);
       onSuccess();
     } catch (err) {
       setError(err.message || 'Failed to process payment');
@@ -42,7 +44,7 @@ const PayFine = ({ open, onClose, fine, onSuccess }) => {
           </Alert>
         )}
         <DialogContentText>
-          You are about to pay a fine of <strong>${fine.amount.toFixed(2)}</strong> for:
+          You are about to pay a fine of <strong>${parseFloat(fine.amount || 0).toFixed(2)}</strong> for:
         </DialogContentText>
         <Typography variant="body1" sx={{ mt: 1, fontStyle: 'italic' }}>
           "{fine.reason}"

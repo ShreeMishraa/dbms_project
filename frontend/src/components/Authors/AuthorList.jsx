@@ -1,111 +1,138 @@
-import { useState, useEffect, useContext } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Typography, 
-  Box, 
+import React, { useState, useEffect, useContext } from 'react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Box,
   Button,
   TextField,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
-} from '@mui/material';
-import { Delete, Edit } from '@mui/icons-material';
-import { getAuthors, deleteAuthor } from '../../services/api';
-import AuthContext from '../../context/AuthContext';
-import AddAuthor from './AddAuthor';
+  DialogActions,
+  Alert
+} from '@mui/material'
+import { Delete, Edit } from '@mui/icons-material'
+import { getAuthors, deleteAuthor } from '../../services/api'
+import AuthContext from '../../context/AuthContext'
+import AddAuthor from './AddAuthor'
+import EditAuthor from './EditAuthor'
 
 const AuthorList = () => {
-  const [authors, setAuthors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedAuthor, setSelectedAuthor] = useState(null);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
-  const { user } = useContext(AuthContext);
+  const [authors, setAuthors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const { user } = useContext(AuthContext)
+
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [selectedAuthor, setSelectedAuthor] = useState(null)
+
+  const [openAddDialog, setOpenAddDialog] = useState(false)
+
+  // From Code B: proper edit-click handler
+  const [openEditDialog, setOpenEditDialog] = useState(false)
+  const [selectedAuthorForEdit, setSelectedAuthorForEdit] = useState(null)
+
+  const [actionSuccess, setActionSuccess] = useState('')
 
   useEffect(() => {
-    fetchAuthors();
-  }, []);
+    fetchAuthors()
+  }, [])
 
   const fetchAuthors = async () => {
     try {
-      const data = await getAuthors();
-      // Transform API response data to match expected structure
-      const formattedAuthors = data.map(author => ({
+      const data = await getAuthors()
+      const formatted = data.map(author => ({
         id: author.author_id,
         name: author.name || 'Unknown',
         nationality: author.nationality || '',
         biography: author.biography || ''
-      }));
-      setAuthors(formattedAuthors);
-      setLoading(false);
+      }))
+      setAuthors(formatted)
     } catch (err) {
-      setError('Failed to fetch authors');
-      setLoading(false);
+      setError('Failed to fetch authors')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const handleDeleteClick = (author) => {
-    setSelectedAuthor(author);
-    setOpenDeleteDialog(true);
-  };
-
+  // Delete flow
+  const handleDeleteClick = author => {
+    setSelectedAuthor(author)
+    setOpenDeleteDialog(true)
+  }
   const handleDeleteConfirm = async () => {
     try {
-      await deleteAuthor(selectedAuthor.id);
-      setAuthors(authors.filter(a => a.id !== selectedAuthor.id));
-      setOpenDeleteDialog(false);
+      await deleteAuthor(selectedAuthor.id)
+      setAuthors(prev => prev.filter(a => a.id !== selectedAuthor.id))
+      setOpenDeleteDialog(false)
+      setActionSuccess('Author deleted successfully')
+      setTimeout(() => setActionSuccess(''), 3000)
     } catch (err) {
-      setError('Failed to delete author');
+      setError('Failed to delete author')
+      setTimeout(() => setError(''), 3000)
     }
-  };
+  }
 
+  // Add flow
   const handleAddSuccess = () => {
-    setOpenAddDialog(false);
-    fetchAuthors();
-  };
+    setOpenAddDialog(false)
+    fetchAuthors()
+    setActionSuccess('Author added successfully')
+    setTimeout(() => setActionSuccess(''), 3000)
+  }
 
-  const filteredAuthors = authors.filter(author => 
-    author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (author.nationality && author.nationality.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Code-B’s improved edit click
+  const handleEditClick = author => {
+    const authorId = author.author_id ?? author.id
+    setSelectedAuthorForEdit({ ...author, id: authorId })
+    setOpenEditDialog(true)
+  }
+  const handleEditSuccess = () => {
+    setOpenEditDialog(false)
+    fetchAuthors()
+    setActionSuccess('Author updated successfully')
+    setTimeout(() => setActionSuccess(''), 3000)
+  }
 
-  if (loading) return <Typography>Loading authors...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
+  const filtered = authors.filter(a =>
+    a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (a.nationality && a.nationality.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
+
+  if (loading) return <Typography>Loading authors...</Typography>
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" gutterBottom>
         Authors
       </Typography>
-      
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {actionSuccess && <Alert severity="success" sx={{ mb: 2 }}>{actionSuccess}</Alert>}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <TextField
           label="Search Authors"
           variant="outlined"
           size="small"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={e => setSearchTerm(e.target.value)}
         />
         {user?.role === 'librarian' && (
-          <Button 
-            variant="contained" 
-            onClick={() => setOpenAddDialog(true)}
-          >
+          <Button variant="contained" onClick={() => setOpenAddDialog(true)}>
             Add New Author
           </Button>
         )}
       </Box>
-      
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -117,15 +144,24 @@ const AuthorList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAuthors.length > 0 ? (
-              filteredAuthors.map((author) => (
+            {filtered.length > 0 ? (
+              filtered.map(author => (
                 <TableRow key={author.id}>
                   <TableCell>{author.name}</TableCell>
                   <TableCell>{author.nationality}</TableCell>
                   <TableCell sx={{ maxWidth: 300 }}>{author.biography}</TableCell>
                   {user?.role === 'librarian' && (
                     <TableCell>
-                      <IconButton color="error" onClick={() => handleDeleteClick(author)}>
+                      <IconButton
+                        color="primary"
+                        onClick={() => handleEditClick(author)}
+                      >
+                        <Edit />
+                      </IconButton>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleDeleteClick(author)}
+                      >
                         <Delete />
                       </IconButton>
                     </TableCell>
@@ -134,7 +170,10 @@ const AuthorList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={user?.role === 'librarian' ? 4 : 3} align="center">
+                <TableCell
+                  colSpan={user?.role === 'librarian' ? 4 : 3}
+                  align="center"
+                >
                   No authors found
                 </TableCell>
               </TableRow>
@@ -143,19 +182,26 @@ const AuthorList = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           Are you sure you want to delete author "{selectedAuthor?.name}"?
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error">Delete</Button>
+          <Button onClick={handleDeleteConfirm} color="error">
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog 
-        open={openAddDialog} 
+      {/* Add Author Dialog */}
+      <Dialog
+        open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
         maxWidth="sm"
         fullWidth
@@ -165,8 +211,16 @@ const AuthorList = () => {
           <AddAuthor onSuccess={handleAddSuccess} />
         </DialogContent>
       </Dialog>
-    </Box>
-  );
-};
 
-export default AuthorList;
+      {/* Edit Author Dialog via EditAuthor’s own open/onClose */}
+      <EditAuthor
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        author={selectedAuthorForEdit}
+        onSuccess={handleEditSuccess}
+      />
+    </Box>
+  )
+}
+
+export default AuthorList

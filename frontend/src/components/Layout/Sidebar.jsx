@@ -1,4 +1,5 @@
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Toolbar } from '@mui/material';
+import React from 'react';
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Toolbar, Typography, Box } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home as HomeIcon,
@@ -10,8 +11,13 @@ import {
   MeetingRoom as MeetingRoomIcon,
   AccountBalance as AccountBalanceIcon,
   MenuBook as MenuBookIcon,
+  LibraryAdd as LibraryAddIcon,
   Group as GroupIcon,
-  Payment as PaymentIcon
+  Payment as PaymentIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
+  List as ListIcon
 } from '@mui/icons-material';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
@@ -29,11 +35,36 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
     { text: 'My GD Bookings', icon: <GroupIcon />, path: '/my-gd-reservations' }
   ];
 
+  // Enhanced librarian menu with proper CRUD operations
   const librarianItems = [
-    { text: 'Manage Books', icon: <MenuBookIcon />, path: '/books/add' },
-    { text: 'Manage Authors', icon: <PersonIcon />, path: '/authors' },
-    { text: 'Manage Publishers', icon: <BusinessIcon />, path: '/publishers' },
-    { text: 'Manage Fines', icon: <PaymentIcon />, path: '/fines' }
+    { text: 'Dashboard', icon: <HomeIcon />, path: '/dashboard' },
+    { text: 'Book Management', icon: <MenuBookIcon />, path: '/librarian/books', children: [
+      { text: 'All Books', icon: <ListIcon />, path: '/books' },
+      { text: 'Add Book', icon: <AddIcon />, path: '/books/add' },
+      { text: 'Manage Books', icon: <EditIcon />, path: '/librarian/books/manage' }
+    ]},
+    { text: 'Student Management', icon: <PeopleIcon />, path: '/librarian/students' },
+    { text: 'Author Management', icon: <PersonIcon />, path: '/authors', children: [
+      { text: 'All Authors', icon: <ListIcon />, path: '/authors' },
+      { text: 'Add Author', icon: <AddIcon />, path: '/authors/add' }
+    ]},
+    { text: 'Publisher Management', icon: <BusinessIcon />, path: '/publishers', children: [
+      { text: 'All Publishers', icon: <ListIcon />, path: '/publishers' },
+      { text: 'Add Publisher', icon: <AddIcon />, path: '/publishers/add' }
+    ]},
+    { text: 'Fine Management', icon: <PaymentIcon />, path: '/librarian/fines', children: [
+      { text: 'Issue Fine', icon: <AddIcon />, path: '/librarian/fines/issue' },
+      { text: 'All Fines', icon: <ListIcon />, path: '/librarian/fines/all' }
+    ]},
+    { text: 'GD Room Management', icon: <MeetingRoomIcon />, path: '/librarian/gd-rooms', children: [
+      { text: 'All GD Rooms', icon: <ListIcon />, path: '/gd-rooms' },
+      { text: 'Add GD Room', icon: <AddIcon />, path: '/librarian/gd-rooms/add' }
+    ]},
+    { text: 'Student Management', icon: <PeopleIcon />, path: '/librarian/students' },
+      { text: 'Reservations Management', icon: <ReceiptIcon />, path: '/librarian/reservations', children: [
+        { text: 'Book Reservations', icon: <MenuBookIcon />, path: '/librarian/reservations/books' },
+        { text: 'GD Room Reservations', icon: <MeetingRoomIcon />, path: '/librarian/reservations/gd' }
+    ]},
   ];
 
   const isActive = (path) => {
@@ -54,6 +85,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
     transition: 'background-color 0.2s'
   };
 
+  // Choose menu items based on user role
+  const menuItems = userRole === 'librarian' ? librarianItems : studentItems;
+
   return (
     <Drawer
       variant="permanent"
@@ -71,37 +105,19 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
       open={sidebarOpen}
     >
       <Toolbar />
-      <List>
-        {studentItems.map((item) => (
-          <ListItem 
-            key={item.text} 
-            component={Link} 
-            to={item.path}
-            selected={isActive(item.path)}
-            sx={listItemStyle}
-          >
-            <ListItemIcon sx={{ color: isActive(item.path) ? 'primary.main' : 'inherit' }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText 
-              primary={item.text} 
-              primaryTypographyProps={{ 
-                color: isActive(item.path) ? 'primary' : 'inherit',
-                fontWeight: isActive(item.path) ? 'medium' : 'regular'
-              }}
-            />
-          </ListItem>
-        ))}
-        
-        {userRole === 'librarian' && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <ListItem>
-              <ListItemText primary="Librarian Tools" primaryTypographyProps={{ fontWeight: 'bold' }} />
-            </ListItem>
-            {librarianItems.map((item) => (
+      <Box sx={{ overflow: 'auto' }}>
+        <List component="nav" aria-label="main navigation">
+          {userRole === 'librarian' && (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="subtitle2" color="primary" fontWeight="bold">
+                LIBRARIAN PANEL
+              </Typography>
+            </Box>
+          )}
+          
+          {menuItems.map((item) => (
+            <React.Fragment key={item.text}>
               <ListItem 
-                key={item.text} 
                 component={Link} 
                 to={item.path}
                 selected={isActive(item.path)}
@@ -118,10 +134,40 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, userRole }) => {
                   }}
                 />
               </ListItem>
-            ))}
-          </>
-        )}
-      </List>
+              
+              {/* Render sub-menu items for librarian if available */}
+              {item.children && userRole === 'librarian' && (
+                <List component="div" disablePadding>
+                  {item.children.map(child => (
+                    <ListItem
+                      key={child.text}
+                      component={Link}
+                      to={child.path}
+                      selected={isActive(child.path)}
+                      sx={{
+                        ...listItemStyle,
+                        pl: 4
+                      }}
+                    >
+                      <ListItemIcon sx={{ color: isActive(child.path) ? 'primary.main' : 'inherit' }}>
+                        {child.icon}
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={child.text}
+                        primaryTypographyProps={{ 
+                          color: isActive(child.path) ? 'primary' : 'inherit',
+                          fontWeight: isActive(child.path) ? 'medium' : 'regular',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </React.Fragment>
+          ))}
+        </List>
+      </Box>
     </Drawer>
   );
 };

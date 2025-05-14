@@ -89,20 +89,8 @@ const ReserveBook = () => {
         </Alert>
       )}
 
-      <Card sx={{ display: 'flex', mb: 3 }}>
-        <CardMedia
-          component="img"
-          sx={{ width: 150, objectFit: 'contain' }}
-          image={`data:image/svg+xml;utf8,
-            <svg xmlns="http://www.w3.org/2000/svg" width="150" height="200" viewBox="0 0 150 200">
-              <rect width="150" height="200" fill="%23f0f0f0"/>
-              <text x="50%" y="50%" font-family="Arial" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="%23888">
-                Book Cover
-              </text>
-            </svg>`}
-          alt={book.title}
-        />
-        <CardContent sx={{ flex: 1 }}>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
           <Typography variant="h5">{book.title}</Typography>
           <Typography variant="subtitle1" color="text.secondary">
             by {book.author.name}

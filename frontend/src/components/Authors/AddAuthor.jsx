@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   TextField, 
   Button, 
@@ -7,8 +7,9 @@ import {
   Alert
 } from '@mui/material';
 import { addAuthor } from '../../services/api';
+import toast from 'react-hot-toast';
 
-const AddAuthor = ({ onSuccess }) => {
+const AddAuthor = ({ onSuccess = () => {} }) => {
   const [authorData, setAuthorData] = useState({
     name: '',
     biography: '',
@@ -32,9 +33,20 @@ const AddAuthor = ({ onSuccess }) => {
     
     try {
       await addAuthor(authorData);
+      // Clear form fields
+      setAuthorData({
+        name: '',
+        biography: '',
+        nationality: ''
+      });
+      // Show success toast
+      toast.success('Author added successfully!');
+      // Call the onSuccess callback provided by the parent
       onSuccess();
     } catch (err) {
+      console.error("Error adding author:", err);
       setError(err.message || 'Failed to add author');
+      toast.error('Failed to add author');
     } finally {
       setLoading(false);
     }
@@ -54,7 +66,7 @@ const AddAuthor = ({ onSuccess }) => {
         fullWidth
         label="Name"
         name="name"
-        value={authorData.name}
+        value={authorData.name || ''}
         onChange={handleChange}
       />
       <TextField
@@ -64,7 +76,7 @@ const AddAuthor = ({ onSuccess }) => {
         name="biography"
         multiline
         rows={4}
-        value={authorData.biography}
+        value={authorData.biography || ''}
         onChange={handleChange}
       />
       <TextField
@@ -73,7 +85,7 @@ const AddAuthor = ({ onSuccess }) => {
         fullWidth
         label="Nationality"
         name="nationality"
-        value={authorData.nationality}
+        value={authorData.nationality || ''}
         onChange={handleChange}
       />
       
