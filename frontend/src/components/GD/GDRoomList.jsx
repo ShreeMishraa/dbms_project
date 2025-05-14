@@ -46,9 +46,10 @@ const GDRoomList = () => {
         id: room.room_id,
         room_name: room.room_name,
         capacity: room.capacity,
-        reservations: room.reservations || []
-      }))
-      setRooms(formattedRooms)
+        // Handle this correctly - it's a number, not an array
+        reservations: room.current_reservations || 0
+      }));
+      setRooms(formattedRooms);
     } catch (err) {
       console.error('Failed to fetch GD rooms:', err)
       setError('Failed to fetch GD rooms. Please try again later.')
@@ -85,12 +86,12 @@ const GDRoomList = () => {
   }
 
   const getAvailabilityStatus = room => {
-    const current = room.reservations.length
-    const available = room.capacity - current
-    if (available <= 0) return { text: 'Full', color: 'error' }
-    if (available < room.capacity / 2) return { text: 'Limited', color: 'warning' }
-    return { text: 'Available', color: 'success' }
-  }
+    const booked = room.reservations;
+    const available = room.capacity - booked;
+    if (available <= 0) return { text: 'Full', color: 'error' };
+    if (available < room.capacity / 2) return { text: 'Limited', color: 'warning' };
+    return { text: 'Available', color: 'success' };
+  };
 
   if (loading) return <Typography>Loading GD rooms...</Typography>
   if (error) return <Typography color="error">{error}</Typography>
@@ -106,21 +107,24 @@ const GDRoomList = () => {
           <TableHead>
             <TableRow>
               <TableCell>Room Name</TableCell>
-              <TableCell>Capacity</TableCell>
+              <TableCell>Total Capacity</TableCell>
               <TableCell>Current Reservations</TableCell>
-              <TableCell>Availability</TableCell>
+              <TableCell>Available Seats</TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {rooms.length > 0 ? (
+          {rooms.length > 0 ? (
               rooms.map(room => {
                 const status = getAvailabilityStatus(room)
+                const availableSeats = room.capacity - room.reservations
                 return (
                   <TableRow key={room.id}>
                     <TableCell>{room.room_name}</TableCell>
                     <TableCell>{room.capacity}</TableCell>
-                    <TableCell>{room.reservations.length}</TableCell>
+                    <TableCell>{room.reservations}</TableCell>
+                    <TableCell>{availableSeats}</TableCell>
                     <TableCell>
                       <Chip label={status.text} color={status.color} />
                     </TableCell>

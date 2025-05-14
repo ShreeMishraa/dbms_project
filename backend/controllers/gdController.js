@@ -19,10 +19,20 @@ export const createRoom = async (req, res) => {
 // Public: list all GD rooms
 export const getAllRooms = async (req, res) => {
   try {
-    const [rows] = await pool.promise().query('SELECT * FROM gd_rooms');
+    const [rows] = await pool.promise().query(`
+      SELECT gr.room_id,
+             gr.room_name,
+             gr.capacity,
+             COUNT(g.gd_reservation_id) AS current_reservations
+      FROM gd_rooms gr
+      LEFT JOIN gd_reservations g
+        ON g.room_id = gr.room_id
+      GROUP BY gr.room_id
+    `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch rooms', error: err.message });
+    console.error('Error fetching GD rooms:', err);
+    res.status(500).json({ message: 'Failed to fetch rooms' });
   }
 };
 
@@ -110,23 +120,57 @@ export const deleteRoom = async (req, res) => {
   }
 };
 
+// Update the getAllGDReservations function
 export const getAllGDReservations = async (req, res) => {
   try {
-    const [rows] = await pool
-      .promise()
-      .query(`
-        SELECT g.*, r.room_name, 
+    // First verify if the status column exists in the gd_reservations table
+    const [columns] = await pool.promise().query(`
+      SHOW COLUMNS FROM gd_reservations LIKE 'status'
+    `);
+    
+    let query;
+    if (columns.length > 0) {
+      // If status column exists, use it in the query
+      query = `
+        SELECT g.gd_reservation_id, g.member_id, g.room_id, g.reservation_time, 
+               g.duration_minutes, g.status, r.room_name, 
                CONCAT(s.first_name, ' ', s.last_name) as student_name,
                s.roll_no
         FROM gd_reservations g
         JOIN gd_rooms r ON g.room_id = r.room_id
         JOIN students s ON g.member_id = s.member_id
         ORDER BY g.reservation_time DESC
-      `);
-    res.json(rows);
+      `;
+    } else {
+      // If status column doesn't exist, don't include it in the query
+      query = `
+        SELECT g.gd_reservation_id, g.member_id, g.room_id, g.reservation_time, 
+               g.duration_minutes, r.room_name, 
+               CONCAT(s.first_name, ' ', s.last_name) as student_name,
+               s.roll_no
+        FROM gd_reservations g
+        JOIN gd_rooms r ON g.room_id = r.room_id
+        JOIN students s ON g.member_id = s.member_id
+        ORDER BY g.reservation_time DESC
+      `;
+    }
+    
+    const [rows] = await pool.promise().query(query);
+    
+    // Add derived status for rows that don't have status from the database
+    const rowsWithStatus = rows.map(row => {
+      if (!row.status) {
+        const reservationTime = new Date(row.reservation_time);
+        const now = new Date();
+        row.status = reservationTime < now ? 'completed' : 'upcoming';
+      }
+      return row;
+    });
+    
+    res.json(rowsWithStatus);
   } catch (err) {
     console.error('Error fetching all GD reservations:', err);
-    res.status(500).json({ message: 'Failed to fetch GD reservations' });
+    res.status(500).json({ message: 'Failed to fetch GD reservations', error: err.message });
   }
 };
 

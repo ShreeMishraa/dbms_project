@@ -11,7 +11,9 @@ import { body, validationResult } from 'express-validator';
 const router = express.Router();
 
 const validateBook = [
-  body('isbn').isISBN(),
+  body('isbn')
+    .matches(/^\d{10,13}$/)
+    .withMessage('ISBN must be 10–13 numeric digits'),
   body('title').notEmpty(),
   body('total_copies').isInt({ min: 1 }),
   (req, res, next) => {
@@ -25,7 +27,5 @@ router.post('/', authMiddleware, isAdmin, validateBook, addBook);
 router.put('/:id', authMiddleware, isAdmin, updateBook);
 router.delete('/:id', authMiddleware, isAdmin, deleteBook);
 router.get('/', getAllBooks);
-router.get('/all', authMiddleware, isAdmin, getAllReservations);
-router.delete('/:id', authMiddleware, isAdmin, deleteReservation);
 
 export default router;

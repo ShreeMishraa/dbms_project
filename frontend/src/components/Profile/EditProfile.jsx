@@ -8,7 +8,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Grid,
   Box
 } from '@mui/material';
 import { updateProfile } from '../../services/api';
@@ -32,6 +31,7 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
         email: user.email || '',
         phone: user.phone || ''
       });
+      setError('');
     }
   }, [user]);
 
@@ -46,15 +46,15 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
-    
     try {
       await updateProfile(profileData);
-      toast.success('Profile updated successfully');
+      // Notify parent; parent handles success toast
       onSuccess();
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError(err.message || 'Failed to update profile');
-      toast.error('Failed to update profile');
+      const message = err.response?.data?.message || err.message || 'Failed to update profile';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,6 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
             {error}
           </Alert>
         )}
-        
         <Box sx={{ mt: 2 }}>
           <TextField
             fullWidth
@@ -79,7 +78,6 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
             value={profileData.first_name}
             onChange={handleChange}
           />
-          
           <TextField
             fullWidth
             margin="normal"
@@ -88,7 +86,6 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
             value={profileData.last_name}
             onChange={handleChange}
           />
-          
           <TextField
             fullWidth
             margin="normal"
@@ -98,7 +95,6 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
             value={profileData.email}
             onChange={handleChange}
           />
-          
           <TextField
             fullWidth
             margin="normal"
@@ -110,13 +106,9 @@ const EditProfile = ({ open, onClose, user, onSuccess }) => {
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={handleSubmit} 
-          color="primary" 
-          disabled={loading}
-        >
-          {loading ? 'Updating...' : 'Update Profile'}
+        <Button onClick={onClose} disabled={loading}>Cancel</Button>
+        <Button onClick={handleSubmit} color="primary" disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : 'Update Profile'}
         </Button>
       </DialogActions>
     </Dialog>

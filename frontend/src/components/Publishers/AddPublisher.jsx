@@ -7,6 +7,7 @@ import {
   Alert
 } from '@mui/material';
 import { addPublisher } from '../../services/api';
+import toast from 'react-hot-toast';
 
 const AddPublisher = ({ onSuccess }) => {
   const [publisherData, setPublisherData] = useState({
@@ -32,9 +33,24 @@ const AddPublisher = ({ onSuccess }) => {
     
     try {
       await addPublisher(publisherData);
-      onSuccess();
+      
+      // Clear form fields
+      setPublisherData({
+        name: '',
+        location: '',
+        contact: ''
+      });
+      
+      // Show toast
+      toast.success('Publisher added successfully');
+      
+      // Call onSuccess if it exists
+      if (typeof onSuccess === 'function') {
+        onSuccess();
+      }
     } catch (err) {
       setError(err.message || 'Failed to add publisher');
+      toast.error('Failed to add publisher');
     } finally {
       setLoading(false);
     }

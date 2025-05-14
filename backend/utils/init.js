@@ -147,6 +147,19 @@ const initDb = async () => {
       )
     `);
 
+    // Check if 'is_deleted' column exists in 'fines' table
+    const [columns] = await pool.promise().query(`
+      SHOW COLUMNS FROM fines LIKE 'is_deleted'
+    `);
+
+    if (columns.length === 0) {
+      // Column doesn't exist — add it
+      await pool.promise().query(`
+        ALTER TABLE fines ADD COLUMN is_deleted TINYINT DEFAULT 0
+      `);
+    }
+
+
     await createTableIfNotExists('gd_rooms', `
       CREATE TABLE gd_rooms (
         room_id INT AUTO_INCREMENT PRIMARY KEY,

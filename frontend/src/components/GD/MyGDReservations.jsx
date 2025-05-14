@@ -37,17 +37,23 @@ const MyGDReservations = () => {
   const fetchReservations = async () => {
     try {
       const data = await getMyGDReservations();
-      // Transform data to ensure it has the expected structure
-      const formattedData = data.map(reservation => ({
-        id: reservation.gd_reservation_id,
-        room: {
-          id: reservation.room_id,
-          room_name: reservation.room_name || `Room ${reservation.room_id}`
-        },
-        reservation_time: reservation.reservation_time,
-        duration_minutes: reservation.duration_minutes || 60,
-        status: reservation.status || 'upcoming'
-      }));
+      const formattedData = data.map(reservation => {
+        const reservationTime = new Date(reservation.reservation_time);
+        const now = new Date();
+        const isPast = reservationTime < now;
+
+        return {
+          id: reservation.gd_reservation_id,
+          room: {
+            id: reservation.room_id,
+            room_name: reservation.room_name || `Room ${reservation.room_id}`
+          },
+          reservation_time: reservation.reservation_time,
+          duration_minutes: reservation.duration_minutes || 60,
+          status: reservation.status || (isPast ? 'completed' : 'upcoming')
+        };
+      });
+
       setReservations(formattedData);
       setLoading(false);
     } catch (err) {
@@ -65,7 +71,7 @@ const MyGDReservations = () => {
   const handleCancelConfirm = async () => {
     try {
       await cancelGDReservation(selectedReservation.id);
-      setReservations(reservations.filter(r => r.id !== selectedReservation.id));
+      setReservations(prev => prev.filter(r => r.id !== selectedReservation.id));
       setOpenCancelDialog(false);
     } catch (err) {
       setError('Failed to cancel reservation');
@@ -81,7 +87,6 @@ const MyGDReservations = () => {
     }
   };
 
-  // Safe filtering that handles potential undefined values
   const filteredReservations = reservations.filter(reservation => {
     const roomName = reservation.room?.room_name?.toLowerCase() || '';
     const status = reservation.status?.toLowerCase() || '';
@@ -89,20 +94,24 @@ const MyGDReservations = () => {
     return roomName.includes(search) || status.includes(search);
   });
 
-  if (loading) return (
-    <Box display="flex" justifyContent="center" my={4}>
-      <CircularProgress />
-    </Box>
-  );
-  
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" my={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Typography color="error">{error}</Typography>;
+  }
 
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
         My GD Room Reservations
       </Typography>
-      
+
       <Box sx={{ mb: 2 }}>
         <TextField
           label="Search Reservations"
@@ -113,7 +122,7 @@ const MyGDReservations = () => {
           fullWidth
         />
       </Box>
-      
+
       {filteredReservations.length === 0 ? (
         <Typography variant="body1">You have no group discussion room reservations.</Typography>
       ) : (
@@ -131,16 +140,13 @@ const MyGDReservations = () => {
             <TableBody>
               {filteredReservations.map((reservation) => {
                 const reservationTime = new Date(reservation.reservation_time);
-                const now = new Date();
-                const isPast = reservationTime < now;
-                const status = reservation.status || (isPast ? 'completed' : 'upcoming');
-                
+                const isValidTime = !isNaN(reservationTime);
+                const status = reservation.status;
+
                 return (
                   <TableRow key={reservation.id}>
                     <TableCell>{reservation.room?.room_name || 'Unknown Room'}</TableCell>
-                    <TableCell>
-                      {isNaN(reservationTime) ? 'Invalid Date' : reservationTime.toLocaleString()}
-                    </TableCell>
+                    <TableCell>{isValidTime ? reservationTime.toLocaleString() : 'Invalid Date'}</TableCell>
                     <TableCell>{reservation.duration_minutes}</TableCell>
                     <TableCell>
                       <Chip 
@@ -149,17 +155,18 @@ const MyGDReservations = () => {
                       />
                     </TableCell>
                     <TableCell>
-                    {!isPast && status !== 'cancelled' && (
-                      <Button 
-                        variant="outlined" 
-                        color="error"
-                        startIcon={<Delete />}
-                        onClick={() => handleCancelClick(reservation)}
-                      >
-                        Cancel Reservation
-                      </Button>
-                    )}
-                  </TableCell>
+                      {status !== 'cancelled' && (
+                        <IconButton
+                          color="error"
+                          onClick={() => handleCancelClick(reservation)}
+                          aria-label="cancel reservation"
+                          size="medium"
+                          sx={{ border: '1px solid rgba(211, 47, 47, 0.5)' }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -171,7 +178,8 @@ const MyGDReservations = () => {
       <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)}>
         <DialogTitle>Cancel Reservation</DialogTitle>
         <DialogContent>
-          Are you sure you want to cancel your reservation for {selectedReservation?.room?.room_name || 'this room'}?
+          Are you sure you want to cancel your reservation for{' '}
+          {selectedReservation?.room?.room_name || 'this room'}?
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCancelDialog(false)}>No, Keep It</Button>

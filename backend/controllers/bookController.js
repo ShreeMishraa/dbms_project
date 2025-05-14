@@ -98,10 +98,12 @@ export const getAllReservations = async (req, res) => {
       .query(`
         SELECT r.*, b.title, 
                CONCAT(s.first_name, ' ', s.last_name) as student_name,
-               s.roll_no
+               s.roll_no,
+               a.name as author_name
         FROM reservations r
         JOIN books b ON r.book_id = b.book_id
         JOIN students s ON r.member_id = s.member_id
+        LEFT JOIN authors a ON b.author_id = a.author_id
         ORDER BY r.reservation_date DESC
       `);
     res.json(rows);

@@ -72,23 +72,33 @@ export const payFine = async (req, res) => {
   }
 };
 
-// Student-only: List my fines
-// Update the getMyFines function
 export const getMyFines = async (req, res) => {
   try {
     const member_id = req.userId;
     
-    // Fix the query to handle possible missing issued_date field
-    const [rows] = await pool
-      .promise()
-      .query(`
+    // Check if the column exists before using it
+    const [columns] = await pool.promise().query(`
+      SHOW COLUMNS FROM fines LIKE 'issued_date'
+    `);
+    
+    let query;
+    if (columns.length > 0) {
+      query = `
         SELECT fine_id, amount, reason, payment_status, 
-               IFNULL(issued_date, CURRENT_TIMESTAMP) as issued_date, 
-               payment_date 
+               issued_date, payment_date 
         FROM fines 
         WHERE member_id = ?
-      `, [member_id]);
-      
+      `;
+    } else {
+      query = `
+        SELECT fine_id, amount, reason, payment_status, 
+               CURRENT_TIMESTAMP as issued_date, payment_date 
+        FROM fines 
+        WHERE member_id = ?
+      `;
+    }
+    
+    const [rows] = await pool.promise().query(query, [member_id]);
     res.json(rows);
   } catch (err) {
     console.error('Error fetching fines:', err);
@@ -106,7 +116,7 @@ export const getFinesByLibrarian = async (req, res) => {
         SELECT f.*, s.roll_no, CONCAT(s.first_name, ' ', s.last_name) AS student_name
         FROM fines f
         JOIN students s ON f.member_id = s.member_id
-        ORDER BY f.payment_status ASC, f.fine_id DESC
+        ORDER BY f.is_deleted ASC, f.payment_status ASC, f.fine_id DESC
       `);
     res.json(rows);
   } catch (err) {
@@ -130,8 +140,11 @@ export const deleteFine = async (req, res) => {
       return res.status(404).json({ message: 'Fine not found' });
     }
     
-    // Delete the fine
-    await pool.promise().query('DELETE FROM fines WHERE fine_id = ?', [id]);
+    // Soft delete instead of hard delete
+    await pool.promise().query(
+      'UPDATE fines SET is_deleted = 1 WHERE fine_id = ?', 
+      [id]
+    );
     
     res.json({ message: 'Fine deleted successfully' });
   } catch (err) {

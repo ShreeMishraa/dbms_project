@@ -17,6 +17,7 @@ import {
   DialogActions,
   CircularProgress
 } from '@mui/material';
+import { IconButton } from '@mui/material';
 import { Delete } from '@mui/icons-material';
 import { getReservations, returnBook } from '../../services/api';
 import AuthContext from '../../context/AuthContext';
@@ -67,7 +68,7 @@ const ReservationList = () => {
       setReservations(reservations.filter(r => r.id !== selectedReservation.id));
       setOpenReturnDialog(false);
     } catch (err) {
-      setError('Failed to cancel reservation');
+      setError('Failed to return book');
     }
   };
 
@@ -123,17 +124,16 @@ const ReservationList = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    {reservation.status === 'active' && (
-                      <Button 
-                        variant="outlined"
-                        color="error"
-                        startIcon={<Delete />}
-                        onClick={() => handleReturnClick(reservation)}
-                      >
-                        Cancel Reservation
-                      </Button>
-                    )}
-                  </TableCell>
+  {reservation.status === 'active' && (
+    <IconButton
+      color="error"
+      aria-label="cancel reservation"
+      onClick={() => handleReturnClick(reservation)}
+    >
+      <Delete />
+    </IconButton>
+  )}
+</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -142,7 +142,7 @@ const ReservationList = () => {
       )}
 
       <Dialog open={openReturnDialog} onClose={() => setOpenReturnDialog(false)}>
-        <DialogTitle>Cancel Reservation</DialogTitle>
+        <DialogTitle>Cancel Book Reservation</DialogTitle>
         <DialogContent>
           Are you sure you want to cancel your reservation for "{selectedReservation?.book?.title || 'this book'}"?
         </DialogContent>

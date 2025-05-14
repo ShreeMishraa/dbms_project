@@ -1,20 +1,19 @@
 import { useState, useEffect, useContext } from 'react'
-import { 
-  Typography, 
-  Box, 
-  Card, 
-  CardContent, 
+import {
+  Typography,
+  Box,
+  Card,
+  CardContent,
   CircularProgress,
-  Alert,
-  Grid
+  Alert
 } from '@mui/material'
-import { 
-  Book, 
-  Receipt, 
-  AccountBalance, 
-  MenuBook, 
-  Person, 
-  Business 
+import {
+  Book,
+  Receipt,
+  AccountBalance,
+  MenuBook,
+  Person,
+  Business
 } from '@mui/icons-material'
 import axios from 'axios'
 import AuthContext from '../context/AuthContext'
@@ -38,40 +37,40 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         if (user.role === 'student') {
-          // Student dashboard data
           const [reservationsResponse, finesResponse] = await Promise.all([
             axios.get('/api/reservations').catch(() => ({ data: [] })),
             axios.get('/api/fines').catch(() => ({ data: [] }))
           ])
-          
-          const activeReservations = (reservationsResponse.data || []).filter(
-            reservation => reservation.status === 'active'
-          ).length
-          
+
+          const activeReservations = (reservationsResponse.data || [])
+            .filter(reservation => reservation.status === 'active').length
+
           const outstandingFines = (finesResponse.data || [])
             .filter(fine => fine.payment_status === 'unpaid')
-            .reduce((total, fine) => total + parseFloat(fine.amount || 0), 0)
-          
-          setDashboardData({
-            ...dashboardData,
+            .reduce((total, fine) => {
+              const amount = parseFloat(fine.amount || 0)
+              return total + (isNaN(amount) ? 0 : amount)
+            }, 0)
+
+          setDashboardData(prev => ({
+            ...prev,
             borrowedBooks: activeReservations,
             activeReservations,
             outstandingFines
-          })
+          }))
         } else {
-          // Librarian dashboard data
           const [booksResponse, authorsResponse, publishersResponse] = await Promise.all([
             axios.get('/api/books').catch(() => ({ data: [] })),
             axios.get('/api/authors').catch(() => ({ data: [] })),
             axios.get('/api/publishers').catch(() => ({ data: [] }))
           ])
-          
-          setDashboardData({
-            ...dashboardData,
+
+          setDashboardData(prev => ({
+            ...prev,
             totalBooks: (booksResponse.data || []).length,
             totalAuthors: (authorsResponse.data || []).length,
             totalPublishers: (publishersResponse.data || []).length
-          })
+          }))
         }
         setLoading(false)
       } catch (err) {
@@ -84,7 +83,6 @@ const Dashboard = () => {
     fetchDashboardData()
   }, [user])
 
-  // Different stats for different user roles
   const studentStats = [
     { title: 'Books Borrowed', value: dashboardData.borrowedBooks, icon: <Book fontSize="large" color="primary" /> },
     { title: 'Active Reservations', value: dashboardData.activeReservations, icon: <Receipt fontSize="large" color="primary" /> },
@@ -107,7 +105,7 @@ const Dashboard = () => {
       <Typography variant="subtitle1" gutterBottom>
         Welcome back, {user?.role === 'librarian' ? 'Librarian' : user?.first_name || 'User'}!
       </Typography>
-      
+
       {loading ? (
         <Box display="flex" justifyContent="center" mt={4}>
           <CircularProgress />
@@ -115,9 +113,9 @@ const Dashboard = () => {
       ) : error ? (
         <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
       ) : (
-        <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
           {stats.map((stat, index) => (
-            <Grid key={index} style={{ width: '33.33%', padding: '12px' }}>
+            <Box key={index} sx={{ width: { xs: '100%', sm: '30%' }, flexGrow: 1 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -133,11 +131,11 @@ const Dashboard = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
       )}
-      
+
       {user?.role === 'librarian' && (
         <Box mt={4}>
           <Typography variant="h5" gutterBottom>

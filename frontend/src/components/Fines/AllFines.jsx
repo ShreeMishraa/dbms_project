@@ -19,7 +19,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Switch,
+  FormControlLabel
 } from '@mui/material'
 import { Delete } from '@mui/icons-material'
 import toast from 'react-hot-toast'
@@ -34,10 +36,11 @@ const AllFines = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showPaidFines, setShowPaidFines] = useState(false)
 
-  // Delete dialog state
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [selectedFine, setSelectedFine] = useState(null)
+  const [showDeletedFines, setShowDeletedFines] = useState(false);
 
   useEffect(() => {
     const fetchAllFines = async () => {
@@ -63,7 +66,8 @@ const AllFines = () => {
       amount: 10.0,
       reason: 'Overdue book return',
       status: 'unpaid',
-      issued_date: '2025-05-01'
+      issued_date: '2025-05-01',
+      is_deleted: 0
     },
     {
       id: 2,
@@ -73,20 +77,32 @@ const AllFines = () => {
       reason: 'Lost book',
       status: 'paid',
       issued_date: '2025-04-15',
-      payment_date: '2025-04-20'
+      payment_date: '2025-04-20',
+      is_deleted: 1
     }
   ]
 
   const displayFines = fines.length > 0 ? fines : mockFines
 
-  const filteredFines = displayFines.filter((fine) => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      (fine.student_name || '').toLowerCase().includes(searchLower) ||
-      (fine.roll_no || '').toLowerCase().includes(searchLower) ||
-      (fine.reason || '').toLowerCase().includes(searchLower)
-    )
-  })
+  // Update the filteredFines function
+// Replace the filteredFines function with this implementation
+const filteredFines = fines.filter((fine) => {
+  // Check if searchTerm matches
+  const matchesSearch = 
+    (fine.student_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (fine.roll_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (fine.reason || '').toLowerCase().includes(searchTerm.toLowerCase());
+  
+  // Check payment status
+  const isPaid = (fine.payment_status === 'paid' || fine.status === 'paid');
+  const shouldShowBasedOnPayment = showPaidFines ? true : !isPaid;
+  
+  // Check deletion status - IMPORTANT: Properly check numeric value or boolean
+  const isDeleted = fine.is_deleted === 1 || fine.is_deleted === true;
+  const shouldShowBasedOnDeletion = showDeletedFines ? true : !isDeleted;
+  
+  return matchesSearch && shouldShowBasedOnPayment && shouldShowBasedOnDeletion;
+});
 
   const getStatusChip = (status) => (
     <Chip
@@ -96,22 +112,17 @@ const AllFines = () => {
     />
   )
 
-  // DELETE handlers
   const handleDeleteClick = (fine) => {
     setSelectedFine(fine)
     setOpenDeleteDialog(true)
   }
 
-  // Update the handleDeleteConfirm function
   const handleDeleteConfirm = async () => {
     try {
-      // Make sure we're using the correct ID property
-      const fineId = selectedFine?.fine_id || selectedFine?.id;
-      
+      const fineId = selectedFine.fine_id || selectedFine.id;
       await deleteFine(fineId);
-      
-      // Update the UI to remove the deleted fine
-      setFines(fines.filter(f => (f.fine_id || f.id) !== fineId));
+      // remove from local state
+      setFines(prev => prev.filter(f => (f.fine_id || f.id) !== fineId));
       setOpenDeleteDialog(false);
       toast.success('Fine deleted successfully');
     } catch (err) {
@@ -125,9 +136,42 @@ const AllFines = () => {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        All Student Fines
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" component="h1">
+          All Student Fines
+        </Typography>
+        <Box>
+          <TextField
+            label="Search Fines"
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ mr: 2 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showPaidFines}
+                onChange={() => setShowPaidFines(!showPaidFines)}
+                color="primary"
+              />
+            }
+            label="Show Paid Fines"
+            sx={{ mr: 1 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showDeletedFines}
+                onChange={() => setShowDeletedFines(!showDeletedFines)}
+                color="secondary"
+              />
+            }
+            label="Show Deleted Fines"
+          />
+        </Box>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -135,15 +179,7 @@ const AllFines = () => {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <TextField
-          label="Search Fines"
-          variant="outlined"
-          size="small"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: 300 }}
-        />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         {user?.role === 'librarian' && (
           <Button
             variant="contained"
@@ -205,7 +241,6 @@ const AllFines = () => {
         </Table>
       </TableContainer>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}

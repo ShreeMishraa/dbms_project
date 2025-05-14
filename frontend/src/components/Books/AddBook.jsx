@@ -70,35 +70,37 @@ const AddBook = () => {
   }
 
    // Update the handleSubmit function to ensure proper ISBN format
-   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess(false);
-    
-    try {
-      // Validate ISBN format (must be 10 or 13 digits)
-      const cleanIsbn = bookData.isbn.replace(/[-\s]/g, '');
-      if (!/^(?:\d{10}|\d{13})$/.test(cleanIsbn)) {
-        throw new Error('ISBN must be 10 or 13 digits without spaces or hyphens');
-      }
-      
-      await addBook({
-        ...bookData,
-        isbn: cleanIsbn, // Send clean ISBN
-        total_copies: parseInt(bookData.total_copies),
-        published_year: parseInt(bookData.published_year),
-        author_id: parseInt(bookData.author_id),
-        publisher_id: parseInt(bookData.publisher_id)
-      });
-      setSuccess(true);
-      setTimeout(() => navigate('/books'), 1500);
-    } catch (err) {
-      setError(err.message || 'Failed to add book');
-    } finally {
-      setLoading(false);
+   // Update the handleSubmit function to be more flexible with ISBN
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
+  setSuccess(false);
+  
+  try {
+    // Simplify ISBN validation - accept 10-13 digits without hyphens
+    const cleanIsbn = bookData.isbn.replace(/[-\s]/g, '');
+    if (!/^\d{10,13}$/.test(cleanIsbn)) {
+      throw new Error('ISBN must be 10 to 13 digits (numbers only)');
     }
-  };
+    
+    await addBook({
+      ...bookData,
+      isbn: cleanIsbn,
+      total_copies: parseInt(bookData.total_copies),
+      published_year: parseInt(bookData.published_year),
+      author_id: parseInt(bookData.author_id),
+      publisher_id: parseInt(bookData.publisher_id)
+    });
+    
+    setSuccess(true);
+    setTimeout(() => navigate('/books'), 1500);
+  } catch (err) {
+    setError(err.message || 'Failed to add book');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i)

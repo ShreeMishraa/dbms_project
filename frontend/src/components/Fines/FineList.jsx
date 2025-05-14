@@ -10,7 +10,9 @@ import {
   Typography, 
   Box,
   Chip,
-  Button
+  Button,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { getFines } from '../../services/api';
 import AuthContext from '../../context/AuthContext';
@@ -22,6 +24,7 @@ const FineList = () => {
   const [error, setError] = useState('');
   const [selectedFine, setSelectedFine] = useState(null);
   const [openPayDialog, setOpenPayDialog] = useState(false);
+  const [showPaidFines, setShowPaidFines] = useState(false);
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
@@ -68,36 +71,57 @@ const FineList = () => {
     if (!dateString) return "Not Available";
     
     try {
-      // For MySQL datetime format
+      // Handle MySQL datetime format "YYYY-MM-DD HH:MM:SS"
       const date = new Date(dateString);
       
-      if (isNaN(date.getTime())) {
-        // Try parsing as MySQL format (YYYY-MM-DD HH:MM:SS)
-        const parts = dateString.split(/[- :]/);
-        if (parts.length >= 3) {
-          // At least has YYYY-MM-DD
-          const newDate = new Date(parts[0], parts[1]-1, parts[2]);
-          if (!isNaN(newDate.getTime())) {
-            return newDate.toLocaleDateString();
-          }
-        }
-        return "Invalid Date";
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString();
       }
       
-      return date.toLocaleDateString();
-    } catch {
+      // Try alternate parsing approach
+      const parts = dateString.split(/[- :]/);
+      if (parts.length >= 3) {
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+        const day = parseInt(parts[2]);
+        
+        const validDate = new Date(year, month, day);
+        return validDate.toLocaleDateString();
+      }
+      
+      return "Date format issue";
+    } catch (err) {
+      console.error("Date parsing error:", err);
       return "Invalid Date";
     }
   };
+
+  // Filter the fines based on the showPaidFines state
+  const displayFines = fines.filter(fine => {
+    const isPaid = (fine.payment_status === 'paid' || fine.status === 'paid');
+    return showPaidFines ? true : !isPaid;
+  });
 
   if (loading) return <Typography>Loading...</Typography>;
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        My Fines
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" component="h1">
+          My Fines
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showPaidFines}
+              onChange={() => setShowPaidFines(!showPaidFines)}
+              color="primary"
+            />
+          }
+          label="Show Paid Fines"
+        />
+      </Box>
       
       <TableContainer component={Paper}>
         <Table>
@@ -111,7 +135,7 @@ const FineList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {fines.map((fine) => (
+            {displayFines.map((fine) => (
               <TableRow key={fine.fine_id || fine.id}>
                 <TableCell>${parseFloat(fine.amount || 0).toFixed(2)}</TableCell>
                 <TableCell>{fine.reason}</TableCell>

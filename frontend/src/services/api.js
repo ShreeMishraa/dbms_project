@@ -152,58 +152,13 @@ export const addPublisher = async (publisherData) => {
 
 
 // ------------------ Reservations ------------------
-// Update the reserveBook function
-export const reserveBook = async (req, res) => {
+export const reserveBook = async (bookData) => {
   try {
-    const member_id = req.userId;
-    const { book_id } = req.body;
-    
-    // Begin transaction
-    const connection = await pool.promise().getConnection();
-    await connection.beginTransaction();
-    
-    try {
-      const [[book]] = await connection.query(
-        'SELECT available_copies FROM books WHERE book_id=?', 
-        [book_id]
-      );
-      
-      if (!book || book.available_copies < 1) {
-        await connection.rollback();
-        connection.release();
-        return res.status(400).json({ message: 'Book not available' });
-      }
-
-      // Create reservation
-      const [result] = await connection.query(
-        'INSERT INTO reservations(member_id,book_id) VALUES(?,?)',
-        [member_id, book_id]
-      );
-      
-      // Update available copies
-      await connection.query(
-        'UPDATE books SET available_copies=available_copies-1 WHERE book_id=?',
-        [book_id]
-      );
-      
-      // Update student's issued books count
-      await connection.query(
-        'UPDATE students SET total_books_issued = total_books_issued + 1 WHERE member_id = ?',
-        [member_id]
-      );
-      
-      await connection.commit();
-      connection.release();
-      
-      res.status(201).json({ reservationId: result.insertId });
-    } catch (err) {
-      await connection.rollback();
-      connection.release();
-      throw err;
-    }
-    
-  } catch (err) {
-    res.status(500).json({ message: 'Reservation failed', error: err.message });
+    const response = await axios.post('/api/reservations', bookData);
+    return response.data;
+  } catch (error) {
+    console.error('Error reserving book:', error);
+    throw error.response?.data || { message: 'Failed to reserve book' };
   }
 };
 

@@ -46,10 +46,10 @@ import GDRoomList from './components/GD/GDRoomList'
 import MyGDReservations from './components/GD/MyGDReservations'
 
 // Librarian-only Components
-import LibrarianBooksManage from './components/Librarian/LibrarianBooksManage'
-import IssueFine from './components/Librarian/IssueFine'
-import AllFines from './components/Librarian/AllFines'
-import AddGDRoom from './components/Librarian/AddGDRoom'
+import LibrarianBooksManage from './components/Books/LibrarianBooksManage'
+import IssueFine from './components/Fines/IssueFine'
+import AllFines from './components/Fines/AllFines'
+import AddGDRoom from './components/GD/AddGDRoom'
 import StudentList from './components/Librarian/StudentList'
 import StudentReservations from './components/Librarian/StudentReservations';
 import StudentGDReservations from './components/Librarian/StudentGDReservations';
@@ -61,7 +61,7 @@ import Loader from './components/common/Loader'
 import ErrorBoundary from './components/common/ErrorBoundary'
 
 function AppContent() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user, isLoading, backendError } = useContext(AuthContext)
   const location = useLocation()
 

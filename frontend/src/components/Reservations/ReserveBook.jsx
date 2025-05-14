@@ -46,19 +46,25 @@ const ReserveBook = () => {
   }, [bookId, navigate])
 
   const handleReserve = async () => {
-    setReserving(true)
-    setError('')
-
+    setReserving(true);
+    setError('');
+  
     try {
-      await reserveBook(bookId)
-      setSuccess(true)
-      setTimeout(() => navigate('/reservations'), 1500)
+      // Make sure bookId is valid
+      if (!bookId) {
+        throw new Error('Invalid book ID');
+      }
+  
+      await reserveBook({ book_id: bookId });
+      setSuccess(true);
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      setError(err.message || 'Failed to reserve book')
+      console.error('Reservation error:', err);
+      setError(err.message || 'Failed to reserve book');
     } finally {
-      setReserving(false)
+      setReserving(false);
     }
-  }
+  };
 
   if (loading) {
     return <Typography>Loading book details...</Typography>
